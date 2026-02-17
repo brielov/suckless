@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/key",
-	"version": "0.1.0",
+	"version": "0.2.1",
 	"description": "Deterministic serialization of complex values into stable string keys",
 	"keywords": [
 		"cache-key",
