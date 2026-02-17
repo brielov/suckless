@@ -24,8 +24,6 @@ jobs:
           node-version: "22.x"
           registry-url: "https://registry.npmjs.org"
 
-      - run: npm install -g npm@latest
-
       - run: bun install --frozen-lockfile
 
       - run: bun run build
@@ -34,6 +32,6 @@ jobs:
         uses: changesets/action@v1
         with:
           version: bun run version
-          publish: bunx changeset publish
+          publish: npx changeset publish --provenance
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
