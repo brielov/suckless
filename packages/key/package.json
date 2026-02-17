@@ -1,0 +1,46 @@
+{
+	"name": "@suckless/key",
+	"version": "0.1.0",
+	"description": "Deterministic serialization of complex values into stable string keys",
+	"keywords": [
+		"cache-key",
+		"deterministic",
+		"hash",
+		"serialize",
+		"suckless",
+		"typescript"
+	],
+	"homepage": "https://github.com/brielov/suckless/tree/master/packages/key#readme",
+	"bugs": "https://github.com/brielov/suckless/issues",
+	"license": "MIT",
+	"author": "brielov",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/brielov/suckless.git",
+		"directory": "packages/key"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"sideEffects": false,
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"peerDependencies": {
+		"typescript": ">=4.5.0"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
+	}
+}

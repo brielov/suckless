@@ -1,0 +1,30 @@
+{
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"categories": {
+		"correctness": "error",
+		"suspicious": "warn",
+		"pedantic": "warn",
+		"perf": "warn",
+		"style": "warn"
+	},
+	"rules": {
+		"no-magic-numbers": "off",
+		"id-length": "off",
+		"func-style": "off",
+		"no-continue": "off",
+		"no-ternary": "off",
+		"no-negated-condition": "off",
+		"capitalized-comments": "off",
+		"sort-keys": "off",
+		"max-statements": "off",
+		"max-lines-per-function": "off",
+		"max-lines": "off",
+		"max-depth": "off",
+		"max-params": "off",
+		"init-declarations": "off",
+		"no-inline-comments": "off",
+		"sort-imports": "off",
+		"unicorn/no-useless-undefined": "off"
+	},
+	"ignorePatterns": ["dist"]
+}
