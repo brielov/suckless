@@ -14,6 +14,7 @@ export type Children =
 export interface RawHtml {
 	readonly __raw: true
 	readonly value: string
+	toString(): string
 }
 
 /** A function component that receives typed props and returns HTML. */

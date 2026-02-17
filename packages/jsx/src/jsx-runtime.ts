@@ -77,7 +77,7 @@ function isRawHtml(value: unknown): value is RawHtml {
  * Use for pre-escaped or trusted HTML content.
  */
 export function raw(value: string): RawHtml {
-	return { __raw: true, value }
+	return { __raw: true, value, toString: () => value }
 }
 
 // ── Children rendering ─────────────────────────────────────────────
