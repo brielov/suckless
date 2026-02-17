@@ -23,6 +23,8 @@ jobs:
         with:
           node-version: "22.x"
 
+      - run: npm install -g npm@latest
+
       - run: bun install --frozen-lockfile
 
       - run: bun run build
@@ -40,6 +42,6 @@ jobs:
         run: |
           for pkg in packages/*/; do
             if [ -f "$pkg/package.json" ]; then
-              npm publish "$pkg" --provenance --access public || true
+              npm publish "$pkg" --provenance --access public
             fi
           done
