@@ -1,5 +1,11 @@
 # @suckless/jsx
 
+## 0.2.2
+
+### Patch Changes
+
+- 08eebef: Export all HTML and SVG element attribute types from the package entry point
+
 ## 0.2.1
 
 ### Patch Changes
