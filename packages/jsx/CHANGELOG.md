@@ -1,5 +1,11 @@
 # @suckless/jsx
 
+## 0.2.3
+
+### Patch Changes
+
+- Add `property` attribute to `MetaAttributes` for Open Graph meta tags
+
 ## 0.2.2
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/schema",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "Minimal runtime validation with compiled validators",
 	"keywords": [
 		"parser",

@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/limiter",
-	"version": "0.2.2",
+	"version": "0.2.3",
 	"description": "Token bucket rate limiter",
 	"keywords": [
 		"rate-limit",

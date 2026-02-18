@@ -378,6 +378,7 @@ export interface MetaAttributes extends VoidHtmlAttributes {
 		| (string & Record<string, never>)
 	media?: string
 	name?: string
+	property?: string
 }
 
 export interface MeterAttributes extends HtmlAttributes {
