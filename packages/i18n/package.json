@@ -1,0 +1,46 @@
+{
+	"name": "@suckless/i18n",
+	"version": "0.2.3",
+	"description": "Type-safe internationalization with BCP 47 locale resolution",
+	"keywords": [
+		"i18n",
+		"internationalization",
+		"locale",
+		"suckless",
+		"translation",
+		"typescript"
+	],
+	"homepage": "https://github.com/brielov/suckless/tree/master/packages/i18n#readme",
+	"bugs": "https://github.com/brielov/suckless/issues",
+	"license": "MIT",
+	"author": "brielov",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/brielov/suckless.git",
+		"directory": "packages/i18n"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"sideEffects": false,
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"peerDependencies": {
+		"typescript": ">=4.5.0"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
+	}
+}
