@@ -1,0 +1,21 @@
+{
+	"name": "example",
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"@suckless/cache": "workspace:*",
+		"@suckless/cron": "workspace:*",
+		"@suckless/duration": "workspace:*",
+		"@suckless/emitter": "workspace:*",
+		"@suckless/i18n": "workspace:*",
+		"@suckless/jsx": "workspace:*",
+		"@suckless/key": "workspace:*",
+		"@suckless/limiter": "workspace:*",
+		"@suckless/memo": "workspace:*",
+		"@suckless/middleware": "workspace:*",
+		"@suckless/queue": "workspace:*",
+		"@suckless/retry": "workspace:*",
+		"@suckless/router": "workspace:*",
+		"@suckless/schema": "workspace:*"
+	}
+}

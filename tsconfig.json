@@ -5,6 +5,7 @@
 		"module": "Preserve",
 		"moduleDetection": "force",
 		"jsx": "react-jsx",
+		"jsxImportSource": "@suckless/jsx",
 
 		"moduleResolution": "bundler",
 		"allowImportingTsExtensions": true,
@@ -25,6 +26,6 @@
 		"noPropertyAccessFromIndexSignature": false
 	},
 
-	"include": ["packages/*/src/**/*"],
+	"include": ["packages/*/src/**/*", "example/src/**/*"],
 	"exclude": ["node_modules", "dist"]
 }

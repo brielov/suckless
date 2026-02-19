@@ -52,6 +52,10 @@ export default defineWorkspace([
 		root: "packages/memo",
 	},
 	{
+		name: "i18n",
+		root: "packages/i18n",
+	},
+	{
 		name: "jsx",
 		root: "packages/jsx",
 		config: {

@@ -15,9 +15,28 @@
         "typescript": "^5.9.3",
       },
     },
+    "example": {
+      "name": "example",
+      "dependencies": {
+        "@suckless/cache": "workspace:*",
+        "@suckless/cron": "workspace:*",
+        "@suckless/duration": "workspace:*",
+        "@suckless/emitter": "workspace:*",
+        "@suckless/i18n": "workspace:*",
+        "@suckless/jsx": "workspace:*",
+        "@suckless/key": "workspace:*",
+        "@suckless/limiter": "workspace:*",
+        "@suckless/memo": "workspace:*",
+        "@suckless/middleware": "workspace:*",
+        "@suckless/queue": "workspace:*",
+        "@suckless/retry": "workspace:*",
+        "@suckless/router": "workspace:*",
+        "@suckless/schema": "workspace:*",
+      },
+    },
     "packages/cache": {
       "name": "@suckless/cache",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -27,7 +46,7 @@
     },
     "packages/cron": {
       "name": "@suckless/cron",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -37,7 +56,7 @@
     },
     "packages/duration": {
       "name": "@suckless/duration",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -47,7 +66,17 @@
     },
     "packages/emitter": {
       "name": "@suckless/emitter",
-      "version": "0.1.0",
+      "version": "0.2.3",
+      "peerDependencies": {
+        "typescript": ">=4.5.0",
+      },
+      "optionalPeers": [
+        "typescript",
+      ],
+    },
+    "packages/i18n": {
+      "name": "@suckless/i18n",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -57,7 +86,7 @@
     },
     "packages/jsx": {
       "name": "@suckless/jsx",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -67,7 +96,7 @@
     },
     "packages/key": {
       "name": "@suckless/key",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -77,7 +106,7 @@
     },
     "packages/limiter": {
       "name": "@suckless/limiter",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -87,7 +116,7 @@
     },
     "packages/memo": {
       "name": "@suckless/memo",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "devDependencies": {
         "@suckless/key": "workspace:*",
       },
@@ -100,7 +129,7 @@
     },
     "packages/middleware": {
       "name": "@suckless/middleware",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -110,7 +139,7 @@
     },
     "packages/queue": {
       "name": "@suckless/queue",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -120,7 +149,7 @@
     },
     "packages/retry": {
       "name": "@suckless/retry",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -130,7 +159,7 @@
     },
     "packages/router": {
       "name": "@suckless/router",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -140,7 +169,7 @@
     },
     "packages/schema": {
       "name": "@suckless/schema",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -414,6 +443,8 @@
 
     "@suckless/emitter": ["@suckless/emitter@workspace:packages/emitter"],
 
+    "@suckless/i18n": ["@suckless/i18n@workspace:packages/i18n"],
+
     "@suckless/jsx": ["@suckless/jsx@workspace:packages/jsx"],
 
     "@suckless/key": ["@suckless/key@workspace:packages/key"],
@@ -473,6 +504,8 @@
     "enquirer": ["enquirer@2.4.1", "", { "dependencies": { "ansi-colors": "^4.1.1", "strip-ansi": "^6.0.1" } }, "sha512-rRqJg/6gd538VHvR3PSrdRBb/1Vy2YfzHqzvbhGIQpDRKIa4FgV/54b5Q1xYSxOOwKvjXweS26E0Q+nAMwp2pQ=="],
 
     "esprima": ["esprima@4.0.1", "", { "bin": { "esparse": "./bin/esparse.js", "esvalidate": "./bin/esvalidate.js" } }, "sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A=="],
+
+    "example": ["example@workspace:example"],
 
     "extendable-error": ["extendable-error@0.1.7", "", {}, "sha512-UOiS2in6/Q0FK0R0q6UY9vYpQ21mr/Qn1KOnte7vsACuNJf514WvCCUHSRCPcgjPT2bAhNIJdlE6bVap1GKmeg=="],
 
