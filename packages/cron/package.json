@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/cron",
-	"version": "0.2.3",
+	"version": "0.3.0",
 	"description": "Cron expression parser with next/prev schedule computation",
 	"keywords": [
 		"cron",

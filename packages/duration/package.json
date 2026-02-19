@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/duration",
-	"version": "0.2.3",
+	"version": "0.3.0",
 	"description": "Parse and format duration strings",
 	"keywords": [
 		"duration",
