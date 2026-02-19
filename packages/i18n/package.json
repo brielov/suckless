@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/i18n",
-	"version": "0.2.3",
+	"version": "0.3.0",
 	"description": "Type-safe internationalization with BCP 47 locale resolution",
 	"keywords": [
 		"i18n",
