@@ -1,16 +1,11 @@
-/** Wrapper that distinguishes a cached value from a cache miss. */
-export interface CacheResult<V> {
-	value: V
-}
-
 export interface CacheAdapter<K extends string, V> extends AsyncDisposable {
-	get(key: K): Promise<CacheResult<V> | undefined>
+	get(key: K): Promise<V | undefined>
 	set(key: K, value: V, ttl?: number): Promise<void>
 	delete(key: K): Promise<void>
 }
 
 export interface Cache<K extends string, V> extends AsyncDisposable {
-	get(key: K): Promise<CacheResult<V> | undefined>
+	get(key: K): Promise<V | undefined>
 	set(key: K, value: V, ttl?: number): Promise<void>
 	delete(key: K): Promise<void>
 	fetch(key: K, fetcher: () => Promise<V>, ttl?: number): Promise<V>
@@ -52,7 +47,7 @@ export function memoryAdapter<K extends string, V>(
 				return Promise.resolve(undefined)
 			}
 
-			return Promise.resolve({ value: entry.value })
+			return Promise.resolve(entry.value)
 		},
 
 		set(key, value, ttl) {
@@ -99,7 +94,7 @@ export function createCache<K extends string, V>(
 		async fetch(key, fetcher, ttl) {
 			const cached = await store.get(key)
 			if (cached !== undefined) {
-				return cached.value
+				return cached
 			}
 
 			const ongoing = inFlight.get(key)

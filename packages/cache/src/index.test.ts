@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { type CacheAdapter, createCache, memoryAdapter } from "./index"
+import { createCache, type CacheAdapter, memoryAdapter } from "./index"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -12,9 +12,9 @@ function sleep(ms: number): Promise<void> {
 /** Creates a cache adapter that records calls for assertion. */
 function spyAdapter<K extends string, V>(): CacheAdapter<K, V> & {
 	calls: { method: string; args: unknown[] }[]
-	store: Map<K, [V]>
+	store: Map<K, V>
 } {
-	const store = new Map<K, [V]>()
+	const store = new Map<K, V>()
 	const calls: { method: string; args: unknown[] }[] = []
 
 	return {
@@ -22,15 +22,15 @@ function spyAdapter<K extends string, V>(): CacheAdapter<K, V> & {
 		calls,
 		get(key) {
 			calls.push({ method: "get", args: [key] })
-			const entry = store.get(key)
-			if (entry === undefined) {
+			const value = store.get(key)
+			if (!store.has(key)) {
 				return Promise.resolve(undefined)
 			}
-			return Promise.resolve({ value: entry[0] })
+			return Promise.resolve(value)
 		},
 		set(key, value, ttl) {
 			calls.push({ method: "set", args: [key, value, ttl] })
-			store.set(key, [value])
+			store.set(key, value)
 			return Promise.resolve()
 		},
 		delete(key) {
@@ -54,10 +54,10 @@ describe("memoryAdapter", () => {
 		expect(await adapter.get("missing")).toBeUndefined()
 	})
 
-	test("set then get returns wrapped value", async () => {
+	test("set then get returns the value", async () => {
 		await using adapter = memoryAdapter<string, string>()
 		await adapter.set("key", "value")
-		expect(await adapter.get("key")).toEqual({ value: "value" })
+		expect(await adapter.get("key")).toBe("value")
 	})
 
 	test("delete removes the value", async () => {
@@ -70,7 +70,7 @@ describe("memoryAdapter", () => {
 	test("expires entries after TTL", async () => {
 		await using adapter = memoryAdapter<string, string>()
 		await adapter.set("key", "value", 50)
-		expect(await adapter.get("key")).toEqual({ value: "value" })
+		expect(await adapter.get("key")).toBe("value")
 		await sleep(60)
 		expect(await adapter.get("key")).toBeUndefined()
 	})
@@ -91,10 +91,10 @@ describe("createCache with memory adapter", () => {
 		expect(await cache.get("missing")).toBeUndefined()
 	})
 
-	test("set then get returns wrapped value", async () => {
+	test("set then get returns the value", async () => {
 		await using cache = createCache(memoryAdapter<string, string>())
 		await cache.set("key", "value")
-		expect(await cache.get("key")).toEqual({ value: "value" })
+		expect(await cache.get("key")).toBe("value")
 	})
 
 	test("delete removes the value", async () => {
@@ -113,15 +113,15 @@ describe("createCache with memory adapter", () => {
 		await using cache = createCache(memoryAdapter<string, number>())
 		await cache.set("key", 1)
 		await cache.set("key", 2)
-		expect(await cache.get("key")).toEqual({ value: 2 })
+		expect(await cache.get("key")).toBe(2)
 	})
 
 	test("stores different keys independently", async () => {
 		await using cache = createCache(memoryAdapter<string, number>())
 		await cache.set("a", 1)
 		await cache.set("b", 2)
-		expect(await cache.get("a")).toEqual({ value: 1 })
-		expect(await cache.get("b")).toEqual({ value: 2 })
+		expect(await cache.get("a")).toBe(1)
+		expect(await cache.get("b")).toBe(2)
 	})
 
 	test("stores complex values", async () => {
@@ -129,15 +129,7 @@ describe("createCache with memory adapter", () => {
 			createCache(memoryAdapter<string, { name: string; age: number }>())
 		const obj = { name: "Alice", age: 30 }
 		await cache.set("user", obj)
-		expect(await cache.get("user")).toEqual({ value: obj })
-	})
-
-	test("caches undefined as a value distinct from miss", async () => {
-		await using cache = createCache(memoryAdapter<string, undefined>())
-		await cache.set("key", undefined)
-		const result = await cache.get("key")
-		expect(result).toEqual({ value: undefined })
-		expect(result).not.toBeUndefined()
+		expect(await cache.get("user")).toEqual(obj)
 	})
 })
 
@@ -147,7 +139,7 @@ describe("TTL expiration", () => {
 	test("entry expires after ttl", async () => {
 		await using cache = createCache(memoryAdapter<string, string>())
 		await cache.set("key", "value", 50)
-		expect(await cache.get("key")).toEqual({ value: "value" })
+		expect(await cache.get("key")).toBe("value")
 		await sleep(60)
 		expect(await cache.get("key")).toBeUndefined()
 	})
@@ -156,13 +148,13 @@ describe("TTL expiration", () => {
 		await using cache = createCache(memoryAdapter<string, string>())
 		await cache.set("key", "value")
 		await sleep(60)
-		expect(await cache.get("key")).toEqual({ value: "value" })
+		expect(await cache.get("key")).toBe("value")
 	})
 
 	test("defaultTtl applies when no per-key ttl is given", async () => {
 		await using cache = createCache(memoryAdapter<string, string>(), 50)
 		await cache.set("key", "value")
-		expect(await cache.get("key")).toEqual({ value: "value" })
+		expect(await cache.get("key")).toBe("value")
 		await sleep(60)
 		expect(await cache.get("key")).toBeUndefined()
 	})
@@ -187,7 +179,7 @@ describe("fetch", () => {
 		})
 		expect(result).toBe(42)
 		expect(calls).toBe(1)
-		expect(await cache.get("key")).toEqual({ value: 42 })
+		expect(await cache.get("key")).toBe(42)
 	})
 
 	test("returns cached value without calling fetcher", async () => {
@@ -242,7 +234,7 @@ describe("fetch", () => {
 	test("applies ttl to fetched value", async () => {
 		await using cache = createCache(memoryAdapter<string, string>())
 		await cache.fetch("key", () => Promise.resolve("value"), 50)
-		expect(await cache.get("key")).toEqual({ value: "value" })
+		expect(await cache.get("key")).toBe("value")
 		await sleep(60)
 		expect(await cache.get("key")).toBeUndefined()
 	})
@@ -250,7 +242,7 @@ describe("fetch", () => {
 	test("applies defaultTtl to fetched value", async () => {
 		await using cache = createCache(memoryAdapter<string, string>(), 50)
 		await cache.fetch("key", () => Promise.resolve("value"))
-		expect(await cache.get("key")).toEqual({ value: "value" })
+		expect(await cache.get("key")).toBe("value")
 		await sleep(60)
 		expect(await cache.get("key")).toBeUndefined()
 	})
@@ -285,22 +277,6 @@ describe("fetch", () => {
 
 		expect(results[0]?.status).toBe("rejected")
 		expect(results[1]?.status).toBe("rejected")
-	})
-
-	test("fetcher returning undefined is cached correctly", async () => {
-		await using cache = createCache(memoryAdapter<string, undefined>())
-		let calls = 0
-		await cache.fetch("key", () => {
-			calls++
-			return Promise.resolve(undefined)
-		})
-		expect(calls).toBe(1)
-
-		await cache.fetch("key", () => {
-			calls++
-			return Promise.resolve(undefined)
-		})
-		expect(calls).toBe(1)
 	})
 })
 
@@ -363,7 +339,7 @@ describe("custom adapter", () => {
 
 	test("fetch skips fetcher when adapter has value", async () => {
 		const adapter = spyAdapter<string, number>()
-		adapter.store.set("key", [42])
+		adapter.store.set("key", 42)
 		const cache = createCache(adapter)
 
 		let called = false
