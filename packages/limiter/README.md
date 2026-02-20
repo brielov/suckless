@@ -11,9 +11,9 @@ npm install @suckless/limiter
 ## Usage
 
 ```ts
-import { createLimiter } from "@suckless/limiter"
+import { createLimiter, memoryAdapter } from "@suckless/limiter"
 
-const limiter = createLimiter(100, 60_000) // 100 requests per minute
+const limiter = createLimiter(100, 60_000, memoryAdapter()) // 100 requests per minute
 
 const { ok, remaining, retryAfter } = await limiter.check("user:123")
 if (!ok) {
@@ -24,11 +24,11 @@ if (!ok) {
 ## With middleware
 
 ```ts
-import { createLimiter } from "@suckless/limiter"
+import { createLimiter, memoryAdapter } from "@suckless/limiter"
 import { parse } from "@suckless/duration"
 import type { Middleware } from "@suckless/middleware"
 
-const limiter = createLimiter(100, parse("1m"))
+const limiter = createLimiter(100, parse("1m"), memoryAdapter())
 
 const rateLimit: Middleware<Request, Response> = async (req, next) => {
 	const ip = req.headers.get("x-forwarded-for") ?? "unknown"
@@ -81,11 +81,11 @@ This allows short bursts up to `max` while enforcing the average rate over the w
 
 ## API
 
-### `createLimiter(max, window, adapter?): Limiter`
+### `createLimiter(max, window, adapter): Limiter`
 
 - `max` — maximum tokens (requests) per window
 - `window` — time window in milliseconds
-- `adapter` — optional `LimiterAdapter` (defaults to in-memory)
+- `adapter` — a `LimiterAdapter` storage backend
 
 ### `limiter.check(key): Promise<CheckResult>`
 
@@ -101,14 +101,14 @@ Clears the bucket for a key, restoring it to full capacity.
 
 ### `memoryAdapter(sweepIntervalMs?): LimiterAdapter`
 
-In-memory adapter with automatic stale-bucket sweeping. Used by default when no adapter is provided.
+In-memory adapter with automatic stale-bucket sweeping.
 
 ### Cleanup
 
 Stale buckets are swept automatically. The limiter implements `AsyncDisposable` for cleanup:
 
 ```ts
-await using limiter = createLimiter(100, 60_000)
+await using limiter = createLimiter(100, 60_000, memoryAdapter())
 ```
 
 ## License

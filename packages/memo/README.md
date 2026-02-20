@@ -48,3 +48,7 @@ const memoized = memo(fn, (...args) => stableKey(args))
 - **options.max** — optional; caps cache size with LRU eviction (must be a positive integer)
 
 Returns a function with the same signature as `fn`.
+
+## License
+
+MIT

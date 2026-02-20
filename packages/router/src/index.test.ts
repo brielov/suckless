@@ -136,6 +136,32 @@ describe("createRouter", () => {
 		})
 	})
 
+	describe("conflicting params", () => {
+		test("throws on conflicting param names at same position", () => {
+			const r = createRouter<string>()
+			r.add("/users/:id", "byId")
+
+			expect(() => r.add("/users/:name", "byName")).toThrow(
+				"Conflicting param name",
+			)
+		})
+
+		test("allows same param name at same position", () => {
+			const r = createRouter<string>()
+			r.add("/users/:id", "user")
+			r.add("/users/:id/posts", "posts")
+
+			expect(r.find("/users/42")).toEqual({
+				value: "user",
+				params: { id: "42" },
+			})
+			expect(r.find("/users/42/posts")).toEqual({
+				value: "posts",
+				params: { id: "42" },
+			})
+		})
+	})
+
 	describe("chaining", () => {
 		test("add returns router for chaining", () => {
 			const r = createRouter<string>().add("/a", "a").add("/b", "b")

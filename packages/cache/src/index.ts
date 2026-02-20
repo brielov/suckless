@@ -1,10 +1,19 @@
-export interface CacheAdapter<K extends string, V> extends AsyncDisposable {
+/** Excludes `undefined` from value types so `get()` can use `undefined` as the miss sentinel. */
+type NonUndefined = {} | null // oxlint-disable-line typescript-eslint/ban-types
+
+export interface CacheAdapter<
+	K extends string,
+	V extends NonUndefined,
+> extends AsyncDisposable {
 	get(key: K): Promise<V | undefined>
 	set(key: K, value: V, ttl?: number): Promise<void>
 	delete(key: K): Promise<void>
 }
 
-export interface Cache<K extends string, V> extends AsyncDisposable {
+export interface Cache<
+	K extends string,
+	V extends NonUndefined,
+> extends AsyncDisposable {
 	get(key: K): Promise<V | undefined>
 	set(key: K, value: V, ttl?: number): Promise<void>
 	delete(key: K): Promise<void>
@@ -16,7 +25,7 @@ interface Entry<V> {
 	expiresAt: number | undefined
 }
 
-export function memoryAdapter<K extends string, V>(
+export function memoryAdapter<K extends string, V extends NonUndefined>(
 	sweepIntervalMs = 30_000,
 ): CacheAdapter<K, V> {
 	const store = new Map<K, Entry<V>>()
@@ -71,7 +80,7 @@ export function memoryAdapter<K extends string, V>(
 	}
 }
 
-export function createCache<K extends string, V>(
+export function createCache<K extends string, V extends NonUndefined>(
 	adapter: CacheAdapter<K, V>,
 	defaultTtl?: number,
 ): Cache<K, V> {

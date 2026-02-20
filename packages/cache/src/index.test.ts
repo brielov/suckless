@@ -10,7 +10,11 @@ function sleep(ms: number): Promise<void> {
 }
 
 /** Creates a cache adapter that records calls for assertion. */
-function spyAdapter<K extends string, V>(): CacheAdapter<K, V> & {
+// oxlint-disable-next-line typescript-eslint/ban-types
+function spyAdapter<K extends string, V extends {} | null>(): CacheAdapter<
+	K,
+	V
+> & {
 	calls: { method: string; args: unknown[] }[]
 	store: Map<K, V>
 } {

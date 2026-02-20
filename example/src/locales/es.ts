@@ -8,13 +8,21 @@ function tiempoAtras(ms: number): string {
 	const months = Math.floor(days / 30)
 	const years = Math.floor(days / 365)
 
-	if (years > 0) {return `hace ${years} año${years > 1 ? "s" : ""}`}
-	if (months > 0)
-		{return `hace ${months} mes${months > 1 ? "es" : ""}`}
-	if (days > 0) {return `hace ${days} día${days > 1 ? "s" : ""}`}
-	if (hours > 0) {return `hace ${hours} hora${hours > 1 ? "s" : ""}`}
-	if (minutes > 0)
-		{return `hace ${minutes} minuto${minutes > 1 ? "s" : ""}`}
+	if (years > 0) {
+		return `hace ${years} año${years > 1 ? "s" : ""}`
+	}
+	if (months > 0) {
+		return `hace ${months} mes${months > 1 ? "es" : ""}`
+	}
+	if (days > 0) {
+		return `hace ${days} día${days > 1 ? "s" : ""}`
+	}
+	if (hours > 0) {
+		return `hace ${hours} hora${hours > 1 ? "s" : ""}`
+	}
+	if (minutes > 0) {
+		return `hace ${minutes} minuto${minutes > 1 ? "s" : ""}`
+	}
 	return "justo ahora"
 }
 
@@ -30,8 +38,7 @@ export const es: AppDict = {
 	send: "Enviar",
 	contactSuccess: "¡Tu mensaje ha sido enviado con éxito!",
 	notFound: "Página no encontrada",
-	tooManyRequests:
-		"Demasiadas solicitudes. Inténtalo de nuevo más tarde.",
+	tooManyRequests: "Demasiadas solicitudes. Inténtalo de nuevo más tarde.",
 	relativeTime: (ms: number): string => tiempoAtras(ms),
 	postedBy: (author: string): string => `Por ${author}`,
 }

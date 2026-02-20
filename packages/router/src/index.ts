@@ -99,9 +99,13 @@ export function createRouter<T>(): Router<T> {
 				const seg = pattern.slice(i, end)
 
 				if (seg.startsWith(":")) {
-					current.param ??= {
-						name: seg.slice(1),
-						child: createNode(),
+					const name = seg.slice(1)
+					if (current.param === undefined) {
+						current.param = { name, child: createNode() }
+					} else if (current.param.name !== name) {
+						throw new Error(
+							`Conflicting param name at "${pattern}": ":${name}" vs existing ":${current.param.name}"`,
+						)
 					}
 					current = current.param.child
 				} else if (seg.startsWith("*")) {

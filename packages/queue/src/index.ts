@@ -1,18 +1,21 @@
+/** Excludes `undefined` from item types so `pull()` can use `undefined` as the end-of-stream sentinel. */
+type NonUndefined = {} | null // oxlint-disable-line typescript-eslint/ban-types
+
 /** Storage backend for queue items. */
-export interface QueueAdapter<T> extends AsyncDisposable {
+export interface QueueAdapter<T extends NonUndefined> extends AsyncDisposable {
 	push(item: T): Promise<void>
 	pull(signal: AbortSignal): Promise<T | undefined>
 }
 
 /** Producer/consumer queue with pluggable storage. */
-export interface Queue<T> extends AsyncDisposable {
+export interface Queue<T extends NonUndefined> extends AsyncDisposable {
 	push(item: T): Promise<void>
 	drain(): Promise<void>
 	readonly running: number
 }
 
 /** In-memory FIFO queue adapter with blocking pull. */
-export function memoryAdapter<T>(): QueueAdapter<T> {
+export function memoryAdapter<T extends NonUndefined>(): QueueAdapter<T> {
 	const buffer: T[] = []
 	const waiters: ((item: T | undefined) => void)[] = []
 
@@ -63,7 +66,7 @@ export function memoryAdapter<T>(): QueueAdapter<T> {
 }
 
 /** Create a producer/consumer queue with pluggable storage. */
-export function createQueue<T>(
+export function createQueue<T extends NonUndefined>(
 	handler: (item: T) => void | Promise<void>,
 	adapter: QueueAdapter<T>,
 	options?: {

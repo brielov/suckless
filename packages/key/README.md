@@ -20,7 +20,7 @@ stableKey(null) // "N"
 stableKey(undefined) // "U"
 stableKey(42n) // "b42"
 stableKey([1, "a"]) // '[n1,s"a"]'
-stableKey({ b: 2, a: 1 }) // "{a:n1,b:n2}" (sorted keys)
+stableKey({ b: 2, a: 1 }) // '{"a":n1,"b":n2}' (sorted keys)
 ```
 
 ## Determinism

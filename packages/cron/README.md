@@ -54,9 +54,9 @@ Named values: `JAN`-`DEC` for months, `SUN`-`SAT` for days of week.
 
 Day-of-week `7` is normalized to `0` (both mean Sunday). Expressions like `6-7`, `6,0`, `0,6`, and `7,6` are all equivalent (Saturday and Sunday).
 
-### Day-of-month and day-of-week (AND semantics)
+### Day-of-month and day-of-week (OR semantics)
 
-When both day-of-month and day-of-week are specified, a date must match **both** constraints. For example, `0 0 15 * 3` matches only when the 15th falls on a Wednesday.
+When both day-of-month and day-of-week are restricted (neither is `*`), a date matches if it satisfies **either** condition (POSIX OR semantics). For example, `0 0 15 * 3` matches any 15th of the month **or** any Wednesday.
 
 ## API
 
@@ -80,6 +80,8 @@ interface CronExpression {
 	readonly daysOfMonth: ReadonlySet<number>
 	readonly months: ReadonlySet<number>
 	readonly daysOfWeek: ReadonlySet<number>
+	readonly domRestricted: boolean
+	readonly dowRestricted: boolean
 }
 ```
 
