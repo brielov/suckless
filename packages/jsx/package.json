@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/jsx",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "JSX-to-string runtime for server-side HTML rendering with XSS escaping and strict per-element types",
 	"keywords": [
 		"escape",

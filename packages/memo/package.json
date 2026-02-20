@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/memo",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Memoization with explicit key functions and optional LRU eviction",
 	"keywords": [
 		"cache",

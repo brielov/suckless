@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/queue",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Producer/consumer queue with pluggable storage",
 	"keywords": [
 		"adapter",
