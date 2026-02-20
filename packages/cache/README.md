@@ -11,9 +11,9 @@ npm install @suckless/cache
 ## Usage
 
 ```ts
-import { createCache } from "@suckless/cache"
+import { createCache, memoryAdapter } from "@suckless/cache"
 
-const cache = createCache<string, number>()
+const cache = createCache(memoryAdapter<string, number>())
 
 await cache.set("counter", 1)
 await cache.get("counter") // 1
@@ -30,7 +30,7 @@ Pass a TTL in milliseconds per entry or as a default for the entire cache:
 await cache.set("key", "value", 5000) // expires in 5s
 
 // Default TTL for all entries
-const cache = createCache<string, string>(undefined, 5000)
+const cache = createCache(memoryAdapter<string, string>(), 5000)
 await cache.set("key", "value") // uses default 5s TTL
 await cache.set("key", "value", 1000) // overrides with 1s TTL
 ```
@@ -56,13 +56,13 @@ Both the cache and adapters implement `AsyncDisposable`. Use `await using` for a
 
 ```ts
 {
-	await using cache = createCache<string, string>()
+	await using cache = createCache(memoryAdapter<string, string>())
 	await cache.set("key", "value")
 	// cache is disposed when scope exits
 }
 
 // or manually
-const cache = createCache<string, string>()
+const cache = createCache(memoryAdapter<string, string>())
 // ...
 await cache[Symbol.asyncDispose]()
 ```
@@ -169,11 +169,11 @@ const cache = createCache(postgresAdapter("postgres://localhost:5432/mydb"))
 
 ## API
 
-### `createCache<K, V>(adapter?, defaultTtl?)`
+### `createCache<K, V>(adapter, defaultTtl?)`
 
 Creates a cache instance.
 
-- `adapter` — a `CacheAdapter<K, V>`. Defaults to `memoryAdapter()`.
+- `adapter` — a `CacheAdapter<K, V>`.
 - `defaultTtl` — default TTL in milliseconds. Applied when `set` or `fetch` is called without an explicit TTL.
 
 Returns a `Cache<K, V>`.
