@@ -1,10 +1,5 @@
 import { describe, expect, mock, test } from "bun:test"
-import {
-	type PullResult,
-	type QueueAdapter,
-	createQueue,
-	memoryAdapter,
-} from "."
+import { createQueue, type QueueAdapter, memoryAdapter } from "."
 
 function delay(ms: number): Promise<void> {
 	return new Promise<void>((resolve) => {
@@ -20,9 +15,9 @@ describe("memoryAdapter", () => {
 		await adapter.push("c")
 
 		const signal = AbortSignal.abort()
-		expect(await adapter.pull(signal)).toEqual({ value: "a" })
-		expect(await adapter.pull(signal)).toEqual({ value: "b" })
-		expect(await adapter.pull(signal)).toEqual({ value: "c" })
+		expect(await adapter.pull(signal)).toBe("a")
+		expect(await adapter.pull(signal)).toBe("b")
+		expect(await adapter.pull(signal)).toBe("c")
 	})
 
 	test("blocking pull resolves when item pushed", async () => {
@@ -32,7 +27,7 @@ describe("memoryAdapter", () => {
 		const pulling = adapter.pull(controller.signal)
 		await adapter.push(42)
 
-		expect(await pulling).toEqual({ value: 42 })
+		expect(await pulling).toBe(42)
 		controller.abort()
 	})
 
@@ -43,7 +38,7 @@ describe("memoryAdapter", () => {
 		const pulling = adapter.pull(controller.signal)
 		await adapter.push("direct")
 
-		expect(await pulling).toEqual({ value: "direct" })
+		expect(await pulling).toBe("direct")
 		controller.abort()
 	})
 
@@ -73,8 +68,8 @@ describe("memoryAdapter", () => {
 		await adapter.push(2)
 
 		// Drain the buffer
-		expect(await adapter.pull(controller.signal)).toEqual({ value: 1 })
-		expect(await adapter.pull(controller.signal)).toEqual({ value: 2 })
+		expect(await adapter.pull(controller.signal)).toBe(1)
+		expect(await adapter.pull(controller.signal)).toBe(2)
 
 		// Now buffer is empty — this pull will block
 		const pulling = adapter.pull(controller.signal)
@@ -107,9 +102,9 @@ describe("memoryAdapter", () => {
 		await adapter.push("b")
 		await adapter.push("c")
 
-		expect(await pull1).toEqual({ value: "a" })
-		expect(await pull2).toEqual({ value: "b" })
-		expect(await pull3).toEqual({ value: "c" })
+		expect(await pull1).toBe("a")
+		expect(await pull2).toBe("b")
+		expect(await pull3).toBe("c")
 		controller.abort()
 	})
 
@@ -121,27 +116,9 @@ describe("memoryAdapter", () => {
 		await adapter.push("")
 
 		const signal = AbortSignal.abort()
-		expect(await adapter.pull(signal)).toEqual({ value: 0 })
-		expect(await adapter.pull(signal)).toEqual({ value: false })
-		expect(await adapter.pull(signal)).toEqual({ value: "" })
-	})
-
-	test("undefined items pass through correctly", async () => {
-		const adapter = memoryAdapter<undefined>()
-
-		await adapter.push(undefined)
-		await adapter.push(undefined)
-
-		const signal = AbortSignal.abort()
-		const result = await adapter.pull(signal)
-		expect(result).toEqual({ value: undefined })
-		expect(result).not.toBeUndefined()
-
-		// Second pull also returns wrapped undefined, not bare undefined
-		expect(await adapter.pull(signal)).toEqual({ value: undefined })
-
-		// Empty buffer with aborted signal returns bare undefined
-		expect(await adapter.pull(signal)).toBeUndefined()
+		expect(await adapter.pull(signal)).toBe(0)
+		expect(await adapter.pull(signal)).toBe(false)
+		expect(await adapter.pull(signal)).toBe("")
 	})
 })
 
@@ -404,21 +381,6 @@ describe("createQueue", () => {
 		await queue[Symbol.asyncDispose]()
 	})
 
-	test("undefined items pass through handler", async () => {
-		let count = 0
-		const queue = createQueue<undefined>(() => {
-			count++
-		}, memoryAdapter())
-
-		await queue.push(undefined)
-		await queue.push(undefined)
-		await queue.push(undefined)
-		await queue.drain()
-
-		expect(count).toBe(3)
-		await queue[Symbol.asyncDispose]()
-	})
-
 	test("multiple concurrent drain waiters all resolve", async () => {
 		const queue = createQueue<number>(async () => {
 			await delay(10)
@@ -476,7 +438,7 @@ describe("createQueue with spy adapter", () => {
 		const adapter: QueueAdapter<number> = {
 			push: pushFn,
 			pull: () =>
-				new Promise<PullResult<number> | undefined>((resolve) => {
+				new Promise<number | undefined>((resolve) => {
 					setTimeout(() => {
 						resolve(undefined)
 					}, 100)
@@ -493,7 +455,7 @@ describe("createQueue with spy adapter", () => {
 
 	test("workers call adapter pull", async () => {
 		const pullFn = mock((_signal: AbortSignal) =>
-			Promise.resolve<PullResult<number> | undefined>(undefined),
+			Promise.resolve<number | undefined>(undefined),
 		)
 		const adapter: QueueAdapter<number> = {
 			push: () => Promise.resolve(),
@@ -513,7 +475,7 @@ describe("createQueue with spy adapter", () => {
 		const adapter: QueueAdapter<number> = {
 			push: () => Promise.reject(new Error("push failed")),
 			pull: () =>
-				new Promise<PullResult<number> | undefined>((resolve) => {
+				new Promise<number | undefined>((resolve) => {
 					setTimeout(() => {
 						resolve(undefined)
 					}, 100)
@@ -554,7 +516,7 @@ describe("createQueue with spy adapter", () => {
 		const adapter: QueueAdapter<number> = {
 			push: () => Promise.resolve(),
 			pull: () =>
-				new Promise<PullResult<number> | undefined>((resolve) => {
+				new Promise<number | undefined>((resolve) => {
 					setTimeout(() => {
 						resolve(undefined)
 					}, 100)

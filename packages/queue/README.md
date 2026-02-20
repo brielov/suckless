@@ -11,13 +11,14 @@ npm install @suckless/queue
 ## Usage
 
 ```ts
-import { createQueue } from "@suckless/queue"
+import { createQueue, memoryAdapter } from "@suckless/queue"
 
 const queue = createQueue<string>(
 	async (url) => {
 		const res = await fetch(url)
 		await saveToDb(res)
 	},
+	memoryAdapter(),
 	{ concurrency: 4 },
 )
 
@@ -37,13 +38,14 @@ Handler errors are caught to prevent worker death. The handler is responsible fo
 
 ## API
 
-### `createQueue<T>(handler, options?): Queue<T>`
+### `createQueue<T>(handler, adapter, options?): Queue<T>`
 
 Creates a new queue. Workers start pulling immediately.
 
 - `handler` — called for each item. May be sync or async.
-- `options.adapter` — storage backend. Defaults to `memoryAdapter()`.
+- `adapter` — a `QueueAdapter<T>` storage backend.
 - `options.concurrency` — max concurrent handlers. Must be a positive finite integer. Defaults to `1`.
+- `options.onError` — called when the handler throws. Receives the error and the item.
 
 ### `queue.push(item): Promise<void>`
 
@@ -62,7 +64,9 @@ Number of handlers currently executing.
 The queue implements `AsyncDisposable`. Disposing marks the queue as closed, stops workers from pulling new items, waits for in-flight handlers, then disposes the adapter:
 
 ```ts
-await using queue = createQueue<Job>(processJob, { concurrency: 4 })
+await using queue = createQueue<Job>(processJob, memoryAdapter(), {
+	concurrency: 4,
+})
 ```
 
 ## Adapters
@@ -77,7 +81,7 @@ Implement `QueueAdapter<T>` to plug in any backend:
 
 ```ts
 import { RedisClient } from "bun"
-import type { PullResult, QueueAdapter } from "@suckless/queue"
+import type { QueueAdapter } from "@suckless/queue"
 
 function redisAdapter<T>(key: string, url?: string): QueueAdapter<T> {
 	const redis = new RedisClient(url)
@@ -90,7 +94,7 @@ function redisAdapter<T>(key: string, url?: string): QueueAdapter<T> {
 			while (!signal.aborted) {
 				const result = await redis.send("BRPOP", [key, "1"])
 				if (result) {
-					return { value: JSON.parse(result[1]) } as PullResult<T>
+					return JSON.parse(result[1]) as T
 				}
 			}
 			return undefined

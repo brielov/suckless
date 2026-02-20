@@ -1,12 +1,7 @@
-/** Wrapper that distinguishes a pulled value from "no value available." */
-export interface PullResult<T> {
-	value: T
-}
-
 /** Storage backend for queue items. */
 export interface QueueAdapter<T> extends AsyncDisposable {
 	push(item: T): Promise<void>
-	pull(signal: AbortSignal): Promise<PullResult<T> | undefined>
+	pull(signal: AbortSignal): Promise<T | undefined>
 }
 
 /** Producer/consumer queue with pluggable storage. */
@@ -19,13 +14,13 @@ export interface Queue<T> extends AsyncDisposable {
 /** In-memory FIFO queue adapter with blocking pull. */
 export function memoryAdapter<T>(): QueueAdapter<T> {
 	const buffer: T[] = []
-	const waiters: ((result: PullResult<T> | undefined) => void)[] = []
+	const waiters: ((item: T | undefined) => void)[] = []
 
 	return {
 		push(item) {
 			const waiter = waiters.shift()
 			if (waiter) {
-				waiter({ value: item })
+				waiter(item)
 			} else {
 				buffer.push(item)
 			}
@@ -34,18 +29,16 @@ export function memoryAdapter<T>(): QueueAdapter<T> {
 
 		pull(signal) {
 			if (buffer.length > 0) {
-				return Promise.resolve<PullResult<T>>({
-					// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion -- length check guarantees shift returns T
-					value: buffer.shift() as T,
-				})
+				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion -- length check guarantees shift returns T
+				return Promise.resolve(buffer.shift() as T)
 			}
 			if (signal.aborted) {
 				return Promise.resolve(undefined)
 			}
-			return new Promise<PullResult<T> | undefined>((resolve) => {
-				const waiter = (result: PullResult<T> | undefined) => {
+			return new Promise<T | undefined>((resolve) => {
+				const waiter = (item: T | undefined) => {
 					signal.removeEventListener("abort", onAbort)
-					resolve(result)
+					resolve(item)
 				}
 				const onAbort = () => {
 					const idx = waiters.indexOf(waiter)
@@ -104,27 +97,27 @@ export function createQueue<T>(
 
 	async function worker(): Promise<void> {
 		while (!controller.signal.aborted) {
-			let result: PullResult<T> | undefined
+			let item: T | undefined
 			try {
 				// oxlint-disable-next-line no-await-in-loop -- worker loop is sequential by design
-				result = await adapter.pull(controller.signal)
+				item = await adapter.pull(controller.signal)
 			} catch {
 				// Adapter error — exit gracefully to avoid unhandled rejections.
 				break
 			}
-			if (result === undefined) {
+			if (item === undefined) {
 				break
 			}
 			running++
 			try {
-				await handler(result.value) // oxlint-disable-line no-await-in-loop
+				await handler(item) // oxlint-disable-line no-await-in-loop
 			} catch (error) {
 				try {
 					onError?.(
 						error instanceof Error
 							? error
 							: new Error(String(error), { cause: error }),
-						result.value,
+						item,
 					)
 				} catch {
 					// Prevent onError failures from killing the worker.
