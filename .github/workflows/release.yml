@@ -42,6 +42,13 @@ jobs:
         run: |
           for pkg in packages/*/; do
             if [ -f "$pkg/package.json" ]; then
-              npm publish "$pkg" --provenance --access public
+              output=$(npm publish "$pkg" --provenance --access public 2>&1) && echo "$output" || {
+                if echo "$output" | grep -q "cannot publish over"; then
+                  echo "Skipping $pkg (already published)"
+                else
+                  echo "$output" >&2
+                  exit 1
+                fi
+              }
             fi
           done
