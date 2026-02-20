@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/retry",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "Retry with exponential backoff and jitter",
 	"keywords": [
 		"backoff",
