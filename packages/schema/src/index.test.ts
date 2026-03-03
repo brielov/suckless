@@ -395,6 +395,23 @@ describe("object", () => {
 		throws(s, { name: 42, age: 30 })
 	})
 
+	it("does not use inherited properties for required fields", () => {
+		const s = t.object({ name: t.string })
+		const value = {}
+		Object.setPrototypeOf(value, {
+			name: "from-prototype",
+		})
+		throws(s, value, "name: expected string")
+	})
+
+	it("ignores inherited properties for maybe fields", () => {
+		const s = t.object({ name: t.maybe(t.string) })
+		const value = {}
+		Object.setPrototypeOf(value, { name: 42 })
+		const parsed = t.parse(s, value)
+		expect(Object.hasOwn(parsed, "name")).toBe(false)
+	})
+
 	it("error path includes field name", () => {
 		const s = t.object({
 			user: t.object({ name: t.string }),
@@ -528,6 +545,12 @@ describe("record", () => {
 			),
 		)
 	})
+
+	it("ignores inherited enumerable keys", () => {
+		const value = {}
+		Object.setPrototypeOf(value, { bad: 42 })
+		expect(t.parse(t.record(t.string), value)).toEqual({})
+	})
 })
 
 // ============================================================================
@@ -623,6 +646,28 @@ describe("union (discriminated object)", () => {
 		)
 		throws(s, { type: "a", val: 42 }, "expected string")
 		throws(s, { type: "b", val: "wrong" }, "expected finite number")
+	})
+
+	it("does not use inherited properties for required fields", () => {
+		const s = t.union(
+			t.object({ type: t.literal("a"), val: t.string }),
+			t.object({ type: t.literal("b"), val: t.string }),
+		)
+		const value = { type: "a" }
+		Object.setPrototypeOf(value, { val: "from-prototype" })
+		throws(s, value, "val: expected string")
+	})
+
+	it("ignores inherited properties for maybe fields", () => {
+		const s = t.union(
+			t.object({ type: t.literal("a"), val: t.maybe(t.string) }),
+			t.object({ type: t.literal("b"), val: t.maybe(t.string) }),
+		)
+		const value = { type: "a" }
+		Object.setPrototypeOf(value, { val: 42 })
+		const parsed = t.parse(s, value)
+		expect(parsed.type).toBe("a")
+		expect(Object.hasOwn(parsed, "val")).toBe(false)
 	})
 
 	it("works with number discriminants", () => {
@@ -793,6 +838,16 @@ describe("union (fallback try/catch)", () => {
 		expect(t.parse(s, { x: "42" })).toEqual({ x: 42 })
 		accepts(s, ["a", "b"])
 	})
+
+	it("does not leak clone errors for non-cloneable non-matching input", () => {
+		const s = t.union(t.array(t.string), t.object({ a: t.string }))
+		try {
+			t.parse(s, () => {})
+			throw new Error("should have thrown")
+		} catch (error) {
+			expect(String(error)).not.toContain("cloned")
+		}
+	})
 })
 
 // ============================================================================
@@ -819,7 +874,7 @@ describe("preprocess", () => {
 
 	it("trims strings before validation", () => {
 		const s = t.preprocess(
-			t.refine(t.string, (s) => s.length > 0, "expected non-empty"),
+			t.refine(t.string, (value) => value.length > 0, "expected non-empty"),
 			(v) => (typeof v === "string" ? v.trim() : v),
 		)
 		expect(t.parse(s, "  hello  ")).toBe("hello")
@@ -883,18 +938,18 @@ describe("preprocess", () => {
 
 describe("transform", () => {
 	it("validates then transforms", () => {
-		const s = t.transform(t.string, (s) => s.toUpperCase())
+		const s = t.transform(t.string, (value) => value.toUpperCase())
 		expect(t.parse(s, "hello")).toBe("HELLO")
 	})
 
 	it("rejects if inner validation fails", () => {
-		const s = t.transform(t.string, (s) => s.length)
+		const s = t.transform(t.string, (value) => value.length)
 		throws(s, 42, "expected string")
 	})
 
 	it("chained transforms", () => {
 		const s = t.transform(
-			t.transform(t.string, (s) => parseInt(s, 10)),
+			t.transform(t.string, (value) => parseInt(value, 10)),
 			(n) => n * 2,
 		)
 		expect(t.parse(s, "21")).toBe(42)
@@ -902,7 +957,7 @@ describe("transform", () => {
 
 	it("transform inside object", () => {
 		const s = t.object({
-			name: t.transform(t.string, (s) => s.trim()),
+			name: t.transform(t.string, (value) => value.trim()),
 			age: t.transform(t.integer, (n) => n + 1),
 		})
 		const result = t.parse(s, { name: "  Alice  ", age: 29 })
@@ -1130,7 +1185,7 @@ describe("deep composition", () => {
 	})
 
 	it("transform inside array", () => {
-		const s = t.array(t.transform(t.string, (s) => s.length))
+		const s = t.array(t.transform(t.string, (value) => value.length))
 		expect(t.parse(s, ["hi", "hello"])).toEqual([2, 5])
 	})
 })
@@ -1532,7 +1587,7 @@ describe("refine", () => {
 	})
 
 	it("refinement with single quotes in message", () => {
-		const s = t.refine(t.string, (s) => s.length > 0, "can't be empty")
+		const s = t.refine(t.string, (value) => value.length > 0, "can't be empty")
 		accepts(s, "hello")
 		throws(s, "", "can't be empty")
 	})
@@ -1713,7 +1768,7 @@ describe("lazy", () => {
 
 describe("context array path (ctx.length > 0)", () => {
 	it("transform uses context for fn", () => {
-		const s = t.transform(t.string, (s) => s.length)
+		const s = t.transform(t.string, (value) => value.length)
 		expect(t.parse(s, "hello")).toBe(5)
 	})
 
@@ -1726,7 +1781,7 @@ describe("context array path (ctx.length > 0)", () => {
 
 	it("multiple transforms in same object share ctx", () => {
 		const s = t.object({
-			a: t.transform(t.string, (s) => s.toUpperCase()),
+			a: t.transform(t.string, (value) => value.toUpperCase()),
 			b: t.transform(t.integer, (n) => n * 2),
 		})
 		expect(t.parse(s, { a: "hi", b: 5 })).toEqual({
@@ -1743,7 +1798,7 @@ describe("context array path (ctx.length > 0)", () => {
 describe("regression: lazy assigns return value", () => {
 	it("transform inside lazy propagates in array", () => {
 		const s = t.array(
-			t.lazy(() => t.transform(t.string, (s) => s.toUpperCase())),
+			t.lazy(() => t.transform(t.string, (value) => value.toUpperCase())),
 		)
 		expect(t.parse(s, ["hello", "world"])).toEqual(["HELLO", "WORLD"])
 	})
@@ -1780,7 +1835,11 @@ describe("regression: esc() handles newlines and special chars", () => {
 	})
 
 	it("refine message with newline compiles and throws correctly", () => {
-		const s = t.refine(t.string, (s) => s.length > 0, "must not\nbe empty")
+		const s = t.refine(
+			t.string,
+			(value) => value.length > 0,
+			"must not\nbe empty",
+		)
 		expect(t.parse(s, "ok")).toBe("ok")
 		expect(() => t.parse(s, "")).toThrow("must not\nbe empty")
 	})

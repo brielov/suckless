@@ -76,42 +76,65 @@ export function createLimiter(
 
 	const rate = max / window
 	const store = adapter
+	const keyLocks = new Map<string, Promise<void>>()
+
+	async function withKeyLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+		const previous = keyLocks.get(key) ?? Promise.resolve()
+		let release: (() => void) | undefined
+		const next = new Promise<void>((resolve) => {
+			release = resolve
+		})
+		const chain = previous.then(() => next)
+		keyLocks.set(key, chain)
+
+		await previous
+		try {
+			return await fn()
+		} finally {
+			release?.()
+			if (keyLocks.get(key) === chain) {
+				keyLocks.delete(key)
+			}
+		}
+	}
 
 	return {
-		async check(key) {
-			const now = Date.now()
-			let bucket = await store.get(key)
+		check(key) {
+			return withKeyLock(key, async () => {
+				const now = Date.now()
+				let bucket = await store.get(key)
 
-			if (bucket) {
-				bucket.tokens = Math.min(
-					max,
-					bucket.tokens + (now - bucket.last) * rate,
-				)
-				bucket.last = now
-			} else {
-				bucket = { tokens: max, last: now }
-			}
+				if (bucket) {
+					bucket.tokens = Math.min(
+						max,
+						bucket.tokens + (now - bucket.last) * rate,
+					)
+					bucket.last = now
+				} else {
+					bucket = { tokens: max, last: now }
+				}
 
-			if (bucket.tokens >= 1) {
-				bucket.tokens -= 1
+				if (bucket.tokens >= 1) {
+					bucket.tokens -= 1
+					await store.set(key, bucket)
+					return {
+						ok: true,
+						remaining: Math.floor(bucket.tokens),
+						retryAfter: 0,
+					}
+				}
+
 				await store.set(key, bucket)
 				return {
-					ok: true,
-					remaining: Math.floor(bucket.tokens),
-					retryAfter: 0,
+					ok: false,
+					remaining: 0,
+					retryAfter: Math.ceil((1 - bucket.tokens) / rate),
 				}
-			}
-
-			await store.set(key, bucket)
-			return {
-				ok: false,
-				remaining: 0,
-				retryAfter: Math.ceil((1 - bucket.tokens) / rate),
-			}
+			})
 		},
 
-		async reset(key) {
-			await store.delete(key)
+		reset(key) {
+			return withKeyLock(key, () => store.delete(key))
 		},
 
 		[Symbol.asyncDispose]() {

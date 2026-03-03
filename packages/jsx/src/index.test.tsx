@@ -1,6 +1,26 @@
 /** @jsxImportSource @suckless/jsx */
 import { describe, expect, test } from "bun:test"
 import { escape, raw, type Component } from "@suckless/jsx"
+import {
+	Fragment as devFragment,
+	jsx as devJsx,
+	jsxDEV as devJsxDEV,
+	jsxs as devJsxs,
+} from "@suckless/jsx/jsx-dev-runtime"
+
+describe("runtime entrypoints", () => {
+	test("jsx-dev-runtime exports callable functions", () => {
+		expect(typeof devJsx).toBe("function")
+		expect(typeof devJsxs).toBe("function")
+		expect(typeof devJsxDEV).toBe("function")
+		expect(typeof devFragment).toBe("function")
+
+		expect(devJsx("div", { children: "x" }).value).toBe("<div>x</div>")
+		expect(devJsxs("div", { children: ["x", "y"] }).value).toBe("<div>xy</div>")
+		expect(devJsxDEV("div", { children: "x" }).value).toBe("<div>x</div>")
+		expect(devFragment({ children: "x" }).value).toBe("x")
+	})
+})
 
 // ── escape() ───────────────────────────────────────────────────────
 
@@ -324,6 +344,20 @@ describe("edge cases", () => {
 			</div>
 		)
 		expect(html.value).toBe('<div data-ok="yes">text</div>')
+	})
+
+	test("event-handler attribute names are rejected", () => {
+		const props: Record<string, unknown> = {
+			onclick: "alert(1)",
+		}
+		const html = <div {...props}>text</div>
+		expect(html.value).toBe("<div>text</div>")
+	})
+
+	test("invalid tag names are rejected", () => {
+		expect(() => devJsx("img src=x onerror=alert(1)", {})).toThrow(
+			"Invalid tag name",
+		)
 	})
 
 	test("numeric attribute values", () => {

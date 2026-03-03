@@ -105,8 +105,15 @@ export function createQueue<T extends NonUndefined>(
 				// oxlint-disable-next-line no-await-in-loop -- worker loop is sequential by design
 				item = await adapter.pull(controller.signal)
 			} catch {
-				// Adapter error — exit gracefully to avoid unhandled rejections.
-				break
+				// Adapter errors may be transient. Retry until disposed.
+				if (controller.signal.aborted) {
+					break
+				}
+				// oxlint-disable-next-line no-await-in-loop -- retry delay is part of the sequential worker loop
+				await new Promise<void>((resolve) => {
+					setTimeout(resolve, 10)
+				})
+				continue
 			}
 			if (item === undefined) {
 				break
@@ -165,6 +172,10 @@ export function createQueue<T extends NonUndefined>(
 			closed = true
 			controller.abort()
 			await Promise.all(workers)
+			if (pending > 0) {
+				pending = 0
+				notifyDrain()
+			}
 			await adapter[Symbol.asyncDispose]()
 		},
 	}

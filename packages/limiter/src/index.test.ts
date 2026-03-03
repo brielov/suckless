@@ -72,6 +72,15 @@ describe("createLimiter", () => {
 		expect(result.retryAfter).toBeLessThanOrEqual(1000)
 	})
 
+	test("serializes concurrent checks for the same key", async () => {
+		await using limiter = createLimiter(1, 60_000, memoryAdapter())
+
+		const [a, b] = await Promise.all([limiter.check("a"), limiter.check("a")])
+
+		const allowed = [a, b].filter((result) => result.ok)
+		expect(allowed).toHaveLength(1)
+	})
+
 	test("throws on invalid max", () => {
 		const a = memoryAdapter()
 		expect(() => createLimiter(0, 1000, a)).toThrow(RangeError)

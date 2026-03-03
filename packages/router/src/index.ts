@@ -83,6 +83,9 @@ export function createRouter<T>(): Router<T> {
 
 	const router: Router<T> = {
 		add(pattern, value) {
+			if (!pattern.startsWith("/")) {
+				throw new Error('Pattern must start with "/"')
+			}
 			if (!pattern.includes(":") && !pattern.includes("*")) {
 				statics.set(pattern, value)
 			}
@@ -100,6 +103,9 @@ export function createRouter<T>(): Router<T> {
 
 				if (seg.startsWith(":")) {
 					const name = seg.slice(1)
+					if (name.length === 0) {
+						throw new Error("Param name must not be empty")
+					}
 					if (current.param === undefined) {
 						current.param = { name, child: createNode() }
 					} else if (current.param.name !== name) {
@@ -109,6 +115,12 @@ export function createRouter<T>(): Router<T> {
 					}
 					current = current.param.child
 				} else if (seg.startsWith("*")) {
+					if (end !== len) {
+						throw new Error("Wildcard must be the last segment")
+					}
+					if (seg.length === 1) {
+						throw new Error("Wildcard param name must not be empty")
+					}
 					current.wildcard = {
 						name: seg.slice(1),
 						value,
@@ -131,6 +143,9 @@ export function createRouter<T>(): Router<T> {
 		},
 
 		find(path) {
+			if (!path.startsWith("/")) {
+				throw new Error('Path must start with "/"')
+			}
 			if (statics.has(path)) {
 				// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion -- has() guarantees the key exists
 				return { value: statics.get(path) as T, params: {} }

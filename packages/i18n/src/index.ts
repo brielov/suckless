@@ -48,10 +48,20 @@ export function resolve<L extends Readonly<Record<string, unknown>>>(
 	if (!Object.hasOwn(locales, fallback)) {
 		throw new Error(`Fallback locale "${fallback}" not found in locales`)
 	}
-	let tag = locale
+
+	const canonical = new Map<string, keyof L & string>()
+	for (const key of Object.keys(locales) as (keyof L & string)[]) {
+		const lower = key.toLowerCase()
+		if (!canonical.has(lower)) {
+			canonical.set(lower, key)
+		}
+	}
+
+	let tag = locale.toLowerCase()
 	while (tag) {
-		if (Object.hasOwn(locales, tag)) {
-			return tag as keyof L & string
+		const hit = canonical.get(tag)
+		if (hit !== undefined) {
+			return hit
 		}
 		const i = tag.lastIndexOf("-")
 		if (i === -1) {

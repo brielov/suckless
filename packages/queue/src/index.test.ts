@@ -430,6 +430,24 @@ describe("createQueue", () => {
 		await queue[Symbol.asyncDispose]()
 		await queue[Symbol.asyncDispose]()
 	})
+
+	test("drain resolves when queue is disposed with pending items", async () => {
+		const queue = createQueue<number>(async () => {
+			await delay(50)
+		}, memoryAdapter())
+
+		await queue.push(1)
+		await queue.push(2)
+
+		const draining = queue.drain().then(() => "drained")
+		await queue[Symbol.asyncDispose]()
+
+		const outcome = await Promise.race([
+			draining,
+			delay(100).then(() => "timeout"),
+		])
+		expect(outcome).toBe("drained")
+	})
 })
 
 describe("createQueue with spy adapter", () => {
@@ -492,23 +510,35 @@ describe("createQueue with spy adapter", () => {
 		await queue[Symbol.asyncDispose]()
 	})
 
-	test("adapter pull failure exits worker gracefully", async () => {
+	test("recovers from transient adapter pull failures", async () => {
 		let pullCount = 0
+		const pushed: number[] = []
+		const processed: number[] = []
 		const adapter: QueueAdapter<number> = {
-			push: () => Promise.resolve(),
+			push: (item) => {
+				pushed.push(item)
+				return Promise.resolve()
+			},
 			pull: () => {
 				pullCount++
-				return Promise.reject(new Error("pull failed"))
+				if (pullCount === 1) {
+					return Promise.reject(new Error("temporary pull failure"))
+				}
+				return Promise.resolve(pushed.shift())
 			},
 			[Symbol.asyncDispose]: () => Promise.resolve(),
 		}
 
-		const queue = createQueue<number>(() => {}, adapter)
-		await delay(1)
+		const queue = createQueue<number>((item) => {
+			processed.push(item)
+		}, adapter)
+
+		await queue.push(42)
+		await queue.drain()
 		await queue[Symbol.asyncDispose]()
 
-		// Worker called pull once, got an error, and exited
-		expect(pullCount).toBe(1)
+		expect(processed).toEqual([42])
+		expect(pullCount).toBeGreaterThan(1)
 	})
 
 	test("disposal calls adapter dispose", async () => {

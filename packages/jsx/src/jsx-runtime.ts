@@ -31,6 +31,7 @@ const VOID_ELEMENTS: ReadonlySet<string> = new Set([
  * Rejects names containing characters that could break out of a tag.
  */
 const VALID_ATTR_NAME = /^[a-zA-Z_][\w.:-]*$/
+const VALID_TAG_NAME = /^[a-zA-Z][\w:-]*$/
 
 // ── Escape & Raw ───────────────────────────────────────────────────
 
@@ -64,11 +65,25 @@ export function escape(value: string): string {
 }
 
 function isRawHtml(value: unknown): value is RawHtml {
+	if (value === null || typeof value !== "object") {
+		return false
+	}
+	if (!Object.hasOwn(value, "__raw") || !Object.hasOwn(value, "value")) {
+		return false
+	}
+	const rawDescriptor = Object.getOwnPropertyDescriptor(value, "__raw")
+	const valueDescriptor = Object.getOwnPropertyDescriptor(value, "value")
+	if (rawDescriptor === undefined || valueDescriptor === undefined) {
+		return false
+	}
+	if ("get" in rawDescriptor || "set" in rawDescriptor) {
+		return false
+	}
+	if ("get" in valueDescriptor || "set" in valueDescriptor) {
+		return false
+	}
 	return (
-		value !== null &&
-		typeof value === "object" &&
-		"__raw" in value &&
-		value.__raw === true
+		rawDescriptor.value === true && typeof valueDescriptor.value === "string"
 	)
 }
 
@@ -121,6 +136,13 @@ function renderAttributes(props: Record<string, unknown>): string {
 		if (!VALID_ATTR_NAME.test(name)) {
 			continue
 		}
+		if (
+			name.length > 1 &&
+			(name[0] === "o" || name[0] === "O") &&
+			(name[1] === "n" || name[1] === "N")
+		) {
+			continue
+		}
 		const value = props[name]
 		if (
 			value === null ||
@@ -159,6 +181,9 @@ export function jsx(
 ): RawHtml {
 	if (typeof tag === "function") {
 		return tag(props)
+	}
+	if (!VALID_TAG_NAME.test(tag)) {
+		throw new Error(`Invalid tag name: "${tag}"`)
 	}
 
 	const { children, ...rest } = props

@@ -20,8 +20,14 @@ function serializeObject(value: object, seen: Set<object>): string {
 	const keys = Object.keys(value).toSorted()
 	const entries = keys
 		.map((k) => {
-			const v = Object.getOwnPropertyDescriptor(value, k)?.value as unknown
-			return `${JSON.stringify(k)}:${serialize(v, seen)}`
+			const descriptor = Object.getOwnPropertyDescriptor(value, k)
+			if (descriptor === undefined) {
+				throw new TypeError(`Missing property descriptor for key: ${k}`)
+			}
+			if ("get" in descriptor || "set" in descriptor) {
+				throw new TypeError(`Non-serializable accessor property: ${k}`)
+			}
+			return `${JSON.stringify(k)}:${serialize(descriptor.value, seen)}`
 		})
 		.join(",")
 	seen.delete(value)
