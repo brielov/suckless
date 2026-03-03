@@ -40,6 +40,14 @@ const TYPEOF_TAGS: Record<string, string> = {
 	bigint: "bigint",
 }
 
+function cloneOrSelf<T>(value: T): T {
+	try {
+		return structuredClone(value)
+	} catch {
+		return value
+	}
+}
+
 function esc(s: string): string {
 	return s
 		.replaceAll("\\", String.raw`\\`)
@@ -84,6 +92,24 @@ function appendTupleIndex(p: PathVal, idx: number): PathVal {
 		return { s: `${p.s}[${idx}]` }
 	}
 	return { d: `${p.d}+'[${idx}]'` }
+}
+
+function writesToSlot(d: Schema): boolean {
+	switch (d._tag) {
+		case "maybe":
+		case "union":
+		case "transform":
+		case "lazy":
+		case "preprocess": {
+			return true
+		}
+		case "refine": {
+			return writesToSlot(d.inner as Schema)
+		}
+		default: {
+			return false
+		}
+	}
 }
 
 function emit(
@@ -145,14 +171,23 @@ function emit(
 			]
 			for (const key of Object.keys(shape)) {
 				const fd = shape[key]!
-				const acc = `${e}[${JSON.stringify(key)}]`
+				const k = JSON.stringify(key)
+				const acc = `${e}[${k}]`
 				const kp = appendKey(p, key)
+				const own = `Object.hasOwn(${e},${k})`
 				if (fd._tag === "maybe") {
-					parts.push(
-						`if(${JSON.stringify(key)} in ${e}){${emit(fd, acc, ctx, c, kp)}}`,
-					)
+					parts.push(`if(${own}){${emit(fd, acc, ctx, c, kp)}}`)
 				} else {
-					parts.push(emit(fd, acc, ctx, c, kp))
+					const local = `_f${c.n++}`
+					if (writesToSlot(fd)) {
+						parts.push(
+							`let ${local}=${own}?${acc}:undefined;${emit(fd, local, ctx, c, kp)};${acc}=${local}`,
+						)
+					} else {
+						parts.push(
+							`const ${local}=${own}?${acc}:undefined;${emit(fd, local, ctx, c, kp)}`,
+						)
+					}
 				}
 			}
 			return parts.join(";")
@@ -179,7 +214,7 @@ function emit(
 				c,
 				appendIndex(p, v),
 			)
-			return `if(typeof ${e}!=='object'||${e}===null||Array.isArray(${e}))${throwCode(p, "expected object")};for(const ${v} in ${e}){${inner}}`
+			return `if(typeof ${e}!=='object'||${e}===null||Array.isArray(${e}))${throwCode(p, "expected object")};for(const ${v} of Object.keys(${e})){${inner}}`
 		}
 		case "union": {
 			const variants = d.variants as Schema[]
@@ -237,20 +272,31 @@ function emit(
 									continue
 								}
 								const fd = shape[fk]!
-								const acc = `${e}[${JSON.stringify(fk)}]`
+								const fkJson = JSON.stringify(fk)
+								const acc = `${e}[${fkJson}]`
 								const kp = appendKey(p, fk)
+								const own = `Object.hasOwn(${e},${fkJson})`
 								if (fd._tag === "maybe") {
-									parts.push(
-										`if(${JSON.stringify(fk)} in ${e}){${emit(fd, acc, ctx, c, kp)}}`,
-									)
+									parts.push(`if(${own}){${emit(fd, acc, ctx, c, kp)}}`)
 								} else {
-									parts.push(emit(fd, acc, ctx, c, kp))
+									const local = `_f${c.n++}`
+									if (writesToSlot(fd)) {
+										parts.push(
+											`let ${local}=${own}?${acc}:undefined;${emit(fd, local, ctx, c, kp)};${acc}=${local}`,
+										)
+									} else {
+										parts.push(
+											`const ${local}=${own}?${acc}:undefined;${emit(fd, local, ctx, c, kp)}`,
+										)
+									}
 								}
 							}
 							cases.push(`case ${JSON.stringify(val)}:${parts.join(";")};break`)
 						}
-						const keyAcc = `${e}[${JSON.stringify(key)}]`
-						return `if(typeof ${e}!=='object'||${e}===null||Array.isArray(${e}))${throwCode(p, "expected object")};switch(${keyAcc}){${cases.join(";")};default:${throwCode(p, "union failed")}}`
+						const keyJson = JSON.stringify(key)
+						const keyOwn = `Object.hasOwn(${e},${keyJson})`
+						const keyAcc = `${e}[${keyJson}]`
+						return `if(typeof ${e}!=='object'||${e}===null||Array.isArray(${e}))${throwCode(p, "expected object")};if(!${keyOwn})${throwCode(p, "union failed")};switch(${keyAcc}){${cases.join(";")};default:${throwCode(p, "union failed")}}`
 					}
 				}
 			}
@@ -263,7 +309,7 @@ function emit(
 			const label = `_u${c.n++}`
 			const snap = `_s${c.n++}`
 			const cloneIdx = ctx.length
-			ctx.push(structuredClone)
+			ctx.push(cloneOrSelf)
 			// Clone before each try so no variant can mutate state
 			// visible to subsequent variants or the caller.
 			const tries = fns
@@ -321,22 +367,21 @@ function build(d: Schema): (input: unknown) => unknown {
 	try {
 		const ctx: unknown[] = []
 		const body = emit(d, "input", ctx, { n: 0 }, { s: "" })
-		let fn: (input: unknown) => unknown
 		/* oxlint-disable no-new-func, typescript-eslint/no-implied-eval --
-		   JIT compilation via new Function is the whole point of this library */
-		if (ctx.length === 0) {
-			fn = (
-				new Function(`return function(input){${body};return input}`) as () => (
-					input: unknown,
-				) => unknown
-			)()
-		} else {
-			fn = (
-				new Function("v", `return function(input){${body};return input}`) as (
-					v: unknown[],
-				) => (input: unknown) => unknown
-			)(ctx)
-		}
+			   JIT compilation via new Function is the whole point of this library */
+		const fn: (input: unknown) => unknown =
+			ctx.length === 0
+				? (
+						new Function(
+							`return function(input){${body};return input}`,
+						) as () => (input: unknown) => unknown
+					)()
+				: (
+						new Function(
+							"v",
+							`return function(input){${body};return input}`,
+						) as (v: unknown[]) => (input: unknown) => unknown
+					)(ctx)
 		/* oxlint-enable no-new-func, typescript-eslint/no-implied-eval */
 		return fn
 	} finally {

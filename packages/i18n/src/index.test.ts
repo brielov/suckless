@@ -52,6 +52,10 @@ describe("resolve", () => {
 		expect(resolve(locales, "en", "es-AR")).toBe("es-AR")
 	})
 
+	test("matches locale tags case-insensitively", () => {
+		expect(resolve(locales, "en", "ES-ar")).toBe("es-AR")
+	})
+
 	test("falls back to default for unknown locale", () => {
 		expect(resolve(locales, "en", "ja")).toBe("en")
 	})

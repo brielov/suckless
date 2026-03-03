@@ -160,6 +160,13 @@ describe("createRouter", () => {
 				params: { id: "42" },
 			})
 		})
+
+		test("rejects wildcard routes that are not terminal", () => {
+			const r = createRouter<string>()
+			expect(() => r.add("/files/*path/raw", "bad")).toThrow(
+				"Wildcard must be the last segment",
+			)
+		})
 	})
 
 	describe("chaining", () => {
@@ -168,6 +175,28 @@ describe("createRouter", () => {
 
 			expect(r.find("/a")).toEqual({ value: "a", params: {} })
 			expect(r.find("/b")).toEqual({ value: "b", params: {} })
+		})
+	})
+
+	describe("validation", () => {
+		test("rejects empty param names", () => {
+			const r = createRouter<string>()
+			expect(() => r.add("/users/:", "bad")).toThrow(
+				"Param name must not be empty",
+			)
+		})
+
+		test("requires patterns to start with slash", () => {
+			const r = createRouter<string>()
+			expect(() => r.add("users/:id", "bad")).toThrow(
+				'Pattern must start with "/"',
+			)
+		})
+
+		test("requires lookup paths to start with slash", () => {
+			const r = createRouter<string>()
+			r.add("/users/:id", "ok")
+			expect(() => r.find("users/123")).toThrow('Path must start with "/"')
 		})
 	})
 

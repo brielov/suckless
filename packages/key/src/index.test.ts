@@ -214,6 +214,16 @@ describe("stableKey", () => {
 		test("nested non-serializable throws TypeError", () => {
 			expect(() => stableKey({ a: new Date() })).toThrow(TypeError)
 		})
+
+		test("accessor properties throw TypeError", () => {
+			const value = Object.defineProperty({}, "a", {
+				enumerable: true,
+				get() {
+					return 1
+				},
+			})
+			expect(() => stableKey(value)).toThrow(TypeError)
+		})
 	})
 })
 

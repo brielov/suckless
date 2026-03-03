@@ -45,6 +45,7 @@ function coreHandler(req: Request): Response | Promise<Response> {
 		})
 	}
 
+	// oxlint-disable-next-line unicorn/no-array-callback-reference -- router.find is a route lookup method.
 	const match = router.find(url.pathname)
 	if (match) {
 		return match.value(req, match.params)
