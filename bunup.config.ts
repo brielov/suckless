@@ -62,4 +62,8 @@ export default defineWorkspace([
 			entry: ["src/index.ts", "src/jsx-runtime.ts", "src/jsx-dev-runtime.ts"],
 		},
 	},
+	{
+		name: "qr-code",
+		root: "packages/qr-code",
+	},
 ])
