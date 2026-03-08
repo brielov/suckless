@@ -40,6 +40,17 @@ describe("encodeData", () => {
 		expect(result).toContain(String.raw`P:pass\"word;`)
 	})
 
+	it("escapes colons in WiFi SSID and password", () => {
+		const result = encodeData({
+			type: "wifi",
+			ssid: "net:work",
+			password: "pass:word",
+			encryption: "WPA",
+		})
+		expect(result).toContain(String.raw`S:net\:work;`)
+		expect(result).toContain(String.raw`P:pass\:word;`)
+	})
+
 	it("omits password field when undefined", () => {
 		const result = encodeData({
 			type: "wifi",
@@ -292,6 +303,15 @@ describe("renderSvg", () => {
 		expect(svg).toContain("preserveAspectRatio")
 	})
 
+	it("uses conservative default logo size", () => {
+		const svg = renderSvg(makeQr(), {
+			logo: { src: "data:image/png;base64,abc" },
+		})
+		const image = svg.match(/<image[^>]*width="([^"]+)"[^>]*height="([^"]+)"/)
+		expect(image?.[1]).toBe("48")
+		expect(image?.[2]).toBe("48")
+	})
+
 	it("escapes special characters in attributes", () => {
 		const svg = renderSvg(makeQr(), {
 			foreground: 'color"<>&test',
@@ -341,6 +361,89 @@ describe("renderSvg", () => {
 				},
 			}),
 		).toThrow(RangeError)
+	})
+
+	it("throws when logo is too large for EC capacity", () => {
+		const qr = createQrCode("test", { errorCorrection: "L" })
+		expect(() =>
+			renderSvg(qr, {
+				logo: { src: "data:image/png;base64,abc", sizeRatio: 0.5 },
+			}),
+		).toThrow(RangeError)
+	})
+
+	it("accepts logo at high EC level that would fail at low EC", () => {
+		const qrH = createQrCode("https://example.com", {
+			errorCorrection: "H",
+		})
+		const svg = renderSvg(qrH, {
+			logo: {
+				src: "data:image/png;base64,abc",
+				sizeRatio: 0.15,
+			},
+		})
+		expect(svg).toContain("<image")
+	})
+
+	it("counts all modules when logo bg differs from QR bg", () => {
+		const qr = createQrCode("test", { errorCorrection: "L" })
+		// With matching backgrounds, a small logo might pass.
+		// With mismatched backgrounds, it counts all modules
+		// (both dark and light), which is more restrictive.
+		expect(() =>
+			renderSvg(qr, {
+				background: "#ffffff",
+				logo: {
+					src: "data:image/png;base64,abc",
+					backgroundColor: "#ff0000",
+					sizeRatio: 0.3,
+				},
+			}),
+		).toThrow(RangeError)
+	})
+
+	it("renders logo with styled corners without visual conflict", () => {
+		const qr = createQrCode("https://example.com", {
+			errorCorrection: "H",
+		})
+		const svg = renderSvg(qr, {
+			cornerSquareStyle: "rounded",
+			cornerDotStyle: "dot",
+			logo: { src: "data:image/png;base64,abc" },
+		})
+		expect(svg).toContain("<image")
+		expect(svg).toContain("stroke=")
+		expect(svg).toContain("<circle")
+	})
+
+	it("skips modules under logo exclusion zone", () => {
+		const qr = createQrCode("https://example.com", {
+			errorCorrection: "H",
+		})
+		const withLogo = renderSvg(qr, {
+			logo: { src: "data:image/png;base64,abc" },
+		})
+		const without = renderSvg(qr)
+		// The logo version should have fewer rects (modules skipped)
+		// and contain the image element
+		const withCount = (withLogo.match(/<rect/g) ?? []).length
+		const withoutCount = (without.match(/<rect/g) ?? []).length
+		expect(withCount).toBeLessThan(withoutCount)
+		expect(withLogo).toContain("<image")
+	})
+
+	it("uses fmt() for logo borderRadius", () => {
+		const qr = createQrCode("https://example.com", {
+			errorCorrection: "H",
+		})
+		const svg = renderSvg(qr, {
+			logo: {
+				src: "data:image/png;base64,abc",
+				borderRadius: 8.1234,
+			},
+		})
+		expect(svg).toContain('rx="8.123"')
+		expect(svg).toContain('ry="8.123"')
 	})
 })
 

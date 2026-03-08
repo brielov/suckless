@@ -47,6 +47,40 @@ function toImageData(
 	return { data, width: px, height: px }
 }
 
+/**
+ * Simulate the default centered logo cutout used by renderSvg:
+ * size=400, margin=4, sizeRatio=0.12, padding=6.
+ */
+function applyDefaultLogoOcclusion(
+	modules: Uint8Array,
+	size: number,
+): Uint8Array {
+	const svgSize = 400
+	const margin = 4
+	const sizeRatio = 0.12
+	const padding = 6
+	const total = size + margin * 2
+	const cell = svgSize / total
+	const logoSize = svgSize * sizeRatio
+	const totalSize = logoSize + padding * 2
+	const x = (svgSize - totalSize) / 2
+	const y = (svgSize - totalSize) / 2
+	const startX = x / cell - margin
+	const endX = (x + totalSize) / cell - margin
+	const startY = y / cell - margin
+	const endY = (y + totalSize) / cell - margin
+
+	const occluded = new Uint8Array(modules)
+	for (let row = 0; row < size; row++) {
+		for (let col = 0; col < size; col++) {
+			if (col + 1 > startX && col < endX && row + 1 > startY && row < endY) {
+				occluded[row * size + col] = 0
+			}
+		}
+	}
+	return occluded
+}
+
 /** Create QR and decode it with jsQR. */
 function roundTrip(
 	text: string,
@@ -135,6 +169,59 @@ describe("round-trip decode", () => {
 	})
 })
 
+describe("logo robustness", () => {
+	it("keeps short URL decodable with default logo cutout at EC M", () => {
+		const input = "https://example.com"
+		const qr = createQrCode(input, {
+			errorCorrection: "M",
+		})
+		const occluded = applyDefaultLogoOcclusion(qr.modules, qr.size)
+		const { data, width, height } = toImageData(occluded, qr.size, 10)
+		expect(jsQR(data, width, height)?.data).toBe(input)
+	})
+
+	it("keeps WiFi payload decodable with default logo cutout at EC H", () => {
+		const input = encodeData({
+			type: "wifi",
+			ssid: "TestNetwork",
+			password: "password123",
+			encryption: "WPA",
+		})
+		const qr = createQrCode(input, {
+			errorCorrection: "H",
+		})
+		const occluded = applyDefaultLogoOcclusion(qr.modules, qr.size)
+		const { data, width, height } = toImageData(occluded, qr.size, 10)
+		expect(jsQR(data, width, height)?.data).toBe(input)
+	})
+
+	it("keeps long URL decodable with default logo cutout at EC Q", () => {
+		const input = "https://example.com/very/long/path?query=value&foo=bar"
+		const qr = createQrCode(input, {
+			errorCorrection: "Q",
+		})
+		const occluded = applyDefaultLogoOcclusion(qr.modules, qr.size)
+		const { data, width, height } = toImageData(occluded, qr.size, 10)
+		expect(jsQR(data, width, height)?.data).toBe(input)
+	})
+
+	it("keeps vCard decodable with default logo cutout at EC H", () => {
+		const input = encodeData({
+			type: "contact",
+			firstName: "John",
+			lastName: "Doe",
+			phone: "+1234567890",
+			email: "john@example.com",
+		})
+		const qr = createQrCode(input, {
+			errorCorrection: "H",
+		})
+		const occluded = applyDefaultLogoOcclusion(qr.modules, qr.size)
+		const { data, width, height } = toImageData(occluded, qr.size, 10)
+		expect(jsQR(data, width, height)?.data).toBe(input)
+	})
+})
+
 // ── encodeData round-trip ────────────────────────────
 
 describe("encodeData round-trip", () => {
@@ -161,6 +248,16 @@ describe("encodeData round-trip", () => {
 			type: "wifi",
 			ssid: "My;Network",
 			password: 'pass"word',
+			encryption: "WPA",
+		})
+		expect(roundTrip(input)).toBe(input)
+	})
+
+	it("decodes WiFi with colons in SSID and password", () => {
+		const input = encodeData({
+			type: "wifi",
+			ssid: "net:work:5g",
+			password: "pass:word:123",
 			encryption: "WPA",
 		})
 		expect(roundTrip(input)).toBe(input)

@@ -6,6 +6,7 @@ export interface QrCode {
 	readonly version: number
 	readonly size: number
 	readonly modules: Uint8Array
+	readonly errorCorrection: ErrorCorrectionLevel
 }
 
 export interface QrOptions {
@@ -65,6 +66,10 @@ export interface TextOptions {
 	margin?: number
 	invert?: boolean
 }
+
+const DEFAULT_LOGO_SIZE_RATIO = 0.12
+const DEFAULT_LOGO_PADDING = 6
+const DEFAULT_LOGO_BORDER_RADIUS = 4
 
 // ── Internal Constants ────────────────────────────────
 
@@ -147,7 +152,7 @@ function initGf(): [Uint8Array, Uint8Array] {
 		log[x] = i
 		x <<= 1
 		if (x >= 256) {
-			x ^= 0x1_1D
+			x ^= 0x1_1d
 		}
 	}
 	for (let i = 255; i < 512; i++) {
@@ -782,7 +787,7 @@ function versionInfoBits(version: number): number {
 	let rem = version << 12
 	for (let i = 5; i >= 0; i--) {
 		if (rem & (1 << (i + 12))) {
-			rem ^= 0x1F_25 << i
+			rem ^= 0x1f_25 << i
 		}
 	}
 	return (version << 12) | rem
@@ -852,10 +857,10 @@ export function createQrCode(text: string, options?: QrOptions): QrCode {
 	while (buf.length % 8 !== 0) {
 		buf.put(0, 1)
 	}
-	let pad = 0xEC
+	let pad = 0xec
 	while (buf.length < cap) {
 		buf.put(pad, 8)
-		pad = pad === 0xEC ? 0x11 : 0xEC
+		pad = pad === 0xec ? 0x11 : 0xec
 	}
 
 	const dataBytes = buf.toBytes()
@@ -893,13 +898,13 @@ export function createQrCode(text: string, options?: QrOptions): QrCode {
 		writeVersionInfo(modules, size, version)
 	}
 
-	return { version, size, modules }
+	return { version, size, modules, errorCorrection: ecLevel }
 }
 
 // ── Public API: encodeData ────────────────────────────
 
 function escapeWifi(s: string): string {
-	return s.replaceAll(/[\\;,"]/g, (c) => `\\${c}`)
+	return s.replaceAll(/[\\;,":]/g, (c) => `\\${c}`)
 }
 
 function escapeVcard(s: string): string {
@@ -1099,13 +1104,32 @@ function renderCornerDot(
 	}
 }
 
+/**
+ * Conservative limit on how many corrupted modules the QR code can
+ * tolerate before becoming unscannable.
+ *
+ * Each corrupted module affects at most one RS codeword. Standard
+ * RS error correction needs 2 EC codewords per error, giving a
+ * capacity of ecPerBlock/2 errors per block. Some scanners can
+ * detect logo regions as erasures (1 EC codeword each), raising
+ * capacity to ecPerBlock per block. We use 75% of the total EC
+ * codewords as a practical threshold: more conservative than
+ * assuming full erasure decoding, but not so strict that typical
+ * logos are rejected.
+ */
+function ecModuleLimit(version: number, ecLevel: ErrorCorrectionLevel): number {
+	const ecIdx = EC_IDX[ecLevel]
+	const i = ((version - 1) * 4 + ecIdx) * 4
+	const ecPerBlock = EC[i]!
+	const g1Count = EC[i + 1]!
+	const g2Count = EC[i + 3]!
+	return Math.floor((g1Count + g2Count) * ecPerBlock * 0.75)
+}
+
 function renderLogo(opts: LogoOptions, qrSize: number): string {
-	const ratio = opts.sizeRatio ?? 0.2
-	const padding = opts.padding ?? 6
-	const borderRadius = opts.borderRadius ?? 4
-	assertPositive("logo.sizeRatio", ratio)
-	assertNonNegative("logo.padding", padding)
-	assertNonNegative("logo.borderRadius", borderRadius)
+	const ratio = opts.sizeRatio ?? DEFAULT_LOGO_SIZE_RATIO
+	const padding = opts.padding ?? DEFAULT_LOGO_PADDING
+	const borderRadius = opts.borderRadius ?? DEFAULT_LOGO_BORDER_RADIUS
 	const bgColor = opts.backgroundColor ?? "#ffffff"
 	const logoSize = qrSize * ratio
 	const totalSize = logoSize + padding * 2
@@ -1115,8 +1139,8 @@ function renderLogo(opts: LogoOptions, qrSize: number): string {
 		`<rect x="${fmt(x)}" y="${fmt(y)}"` +
 		` width="${fmt(totalSize)}"` +
 		` height="${fmt(totalSize)}"` +
-		` rx="${borderRadius}"` +
-		` ry="${borderRadius}"` +
+		` rx="${fmt(borderRadius)}"` +
+		` ry="${fmt(borderRadius)}"` +
 		` fill="${escapeAttr(bgColor)}"/>` +
 		`<image x="${fmt(x + padding)}"` +
 		` y="${fmt(y + padding)}"` +
@@ -1155,6 +1179,66 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 	const cell = size / total
 	const off = margin * cell
 
+	// Compute logo exclusion zone in module coordinates
+	const logo = options?.logo
+	let exclX1 = 0
+	let exclY1 = 0
+	let exclX2 = -1
+	let exclY2 = -1
+	if (logo) {
+		const ratio = logo.sizeRatio ?? DEFAULT_LOGO_SIZE_RATIO
+		const logoPadding = logo.padding ?? DEFAULT_LOGO_PADDING
+		const borderRadius = logo.borderRadius ?? DEFAULT_LOGO_BORDER_RADIUS
+		assertPositive("logo.sizeRatio", ratio)
+		assertNonNegative("logo.padding", logoPadding)
+		assertNonNegative("logo.borderRadius", borderRadius)
+
+		const logoSize = size * ratio
+		const totalLogoSize = logoSize + logoPadding * 2
+		const logoPixelX1 = (size - totalLogoSize) / 2
+		const logoPixelY1 = (size - totalLogoSize) / 2
+		const logoPixelX2 = logoPixelX1 + totalLogoSize
+		const logoPixelY2 = logoPixelY1 + totalLogoSize
+
+		// Module is excluded when its center falls inside the logo rect.
+		// Center of module (x, y) = off + (x + 0.5) * cell.
+		// Solving for x: x >= ceil((px1 - off) / cell - 0.5)
+		exclX1 = Math.max(0, Math.ceil((logoPixelX1 - off) / cell - 0.5))
+		exclY1 = Math.max(0, Math.ceil((logoPixelY1 - off) / cell - 0.5))
+		exclX2 = Math.min(qr.size - 1, Math.floor((logoPixelX2 - off) / cell - 0.5))
+		exclY2 = Math.min(qr.size - 1, Math.floor((logoPixelY2 - off) / cell - 0.5))
+
+		// Count modules that will be corrupted by the logo.
+		// When the logo background matches the QR background, only
+		// dark modules are corrupted (light modules remain correct).
+		// When they differ, ALL modules in the zone are corrupted.
+		const logoBg = (logo.backgroundColor ?? "#ffffff").toLowerCase()
+		const qrBg = bg.toLowerCase()
+		const bgMatch = logoBg === qrBg
+		let corrupted = 0
+		for (let y = exclY1; y <= exclY2; y++) {
+			for (let x = exclX1; x <= exclX2; x++) {
+				if (bgMatch) {
+					if (qr.modules[y * qr.size + x] !== 0) {
+						corrupted++
+					}
+				} else {
+					corrupted++
+				}
+			}
+		}
+
+		const capacity = ecModuleLimit(qr.version, qr.errorCorrection)
+		if (corrupted > capacity) {
+			throw new RangeError(
+				`Logo obscures ${corrupted} modules but error correction ` +
+					`level ${qr.errorCorrection} can recover at most ` +
+					`${capacity}. Use a higher error correction level ` +
+					`or reduce the logo size.`,
+			)
+		}
+	}
+
 	let svg =
 		`<svg xmlns="http://www.w3.org/2000/svg"` +
 		` viewBox="0 0 ${size} ${size}"` +
@@ -1173,6 +1257,9 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 				continue
 			}
 			if (styledCorners && isFinderRegion(x, y, qr.size)) {
+				continue
+			}
+			if (logo && x >= exclX1 && x <= exclX2 && y >= exclY1 && y <= exclY2) {
 				continue
 			}
 			svg += renderDot(ds, off + x * cell, off + y * cell, cell, fg)
@@ -1199,8 +1286,8 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 		}
 	}
 
-	if (options?.logo) {
-		svg += renderLogo(options.logo, size)
+	if (logo) {
+		svg += renderLogo(logo, size)
 	}
 
 	svg += "</svg>"
