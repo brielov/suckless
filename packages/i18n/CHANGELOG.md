@@ -1,11 +1,12 @@
 # @suckless/i18n
 
+## 0.5.1
+
 ## 0.5.0
 
 ### Minor Changes
 
 - d9eee5c: Security hardening and bug fixes across packages
-
   - **schema**: Use `Object.hasOwn` instead of `in` to prevent prototype pollution in object/union validation; use `Object.keys` instead of `for..in` for record iteration; wrap `structuredClone` to handle non-cloneable union inputs
   - **jsx**: Validate tag names, reject event handler (`on*`) attributes, and harden `isRawHtml` against accessor-based spoofing
   - **router**: Validate that patterns and paths start with `/`, reject empty param names and non-terminal wildcards

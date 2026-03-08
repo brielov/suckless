@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/router",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"description": "Fast URL pattern router",
 	"keywords": [
 		"pattern",
