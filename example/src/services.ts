@@ -14,6 +14,7 @@ import {
 	memoryAdapter as queueMemoryAdapter,
 } from "@suckless/queue"
 import { retry } from "@suckless/retry"
+import { createSSEChannel } from "@suckless/sse"
 
 // ── Event bus ───────────────────────────────────────────────────────
 
@@ -99,6 +100,29 @@ export const emailQueue = createQueue<EmailJob>(
 	queueMemoryAdapter<EmailJob>(),
 	{ concurrency: 2 },
 )
+
+// ── SSE channel ─────────────────────────────────────────────────────
+
+export const sseChannel = createSSEChannel({
+	heartbeat: 15_000,
+	replay: 20,
+})
+
+emitter.on("request", (method, path, status) => {
+	sseChannel.send("request", { method, path, status })
+})
+
+emitter.on("form:submit", (name, email) => {
+	sseChannel.send("form:submit", { name, email })
+})
+
+emitter.on("email:sent", (to) => {
+	sseChannel.send("email:sent", { to })
+})
+
+emitter.on("cache:purge", () => {
+	sseChannel.send("cache:purge", "purged")
+})
 
 // ── Request IP storage ──────────────────────────────────────────────
 

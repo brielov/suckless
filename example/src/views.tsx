@@ -27,6 +27,8 @@ export function Layout(props: {
 				<nav>
 					<a href={`/${locale}/`}>{t("home")}</a>
 					<a href={`/${locale}/contact`}>{t("contact")}</a>
+					<a href={`/${locale}/qr`}>{t("wifiQr")}</a>
+					<a href={`/${locale}/events`}>{t("liveEvents")}</a>
 					<span class="spacer" />
 					<a href={`/${otherLocale}/`}>{otherLabel}</a>
 				</nav>
@@ -154,5 +156,67 @@ export function ErrorPage(props: { message: string }): RawHtml {
 		<div class="error-page">
 			<h1>{props.message}</h1>
 		</div>
+	)
+}
+
+// ── QR code page ────────────────────────────────────────────────────
+
+export function QrPage(props: {
+	t: TranslateFn<AppDict>
+	svg: string
+}): RawHtml {
+	return (
+		<>
+			<h1>{props.t("wifiQr")}</h1>
+			<p>{props.t("wifiQrDescription")}</p>
+			<div class="qr-container">{raw(props.svg)}</div>
+		</>
+	)
+}
+
+// ── Events page ─────────────────────────────────────────────────────
+
+export function EventsPage(props: {
+	locale: Locale
+	t: TranslateFn<AppDict>
+}): RawHtml {
+	const { locale, t } = props
+	return (
+		<>
+			<h1>{t("liveEvents")}</h1>
+			<p>{t("liveEventsDescription")}</p>
+			<div id="event-status" class="event-status">
+				{t("liveEventsConnected")}
+			</div>
+			<ul id="event-log" class="event-log" />
+			{raw(`<script>
+(function () {
+	var src = new EventSource("/${locale}/events/stream");
+	var log = document.getElementById("event-log");
+	var max = 50;
+	src.addEventListener("request", function (e) {
+		add("request", e.data);
+	});
+	src.addEventListener("form:submit", function (e) {
+		add("form:submit", e.data);
+	});
+	src.addEventListener("email:sent", function (e) {
+		add("email:sent", e.data);
+	});
+	src.addEventListener("cache:purge", function (e) {
+		add("cache:purge", e.data);
+	});
+	function add(type, data) {
+		var li = document.createElement("li");
+		var time = new Date().toLocaleTimeString();
+		li.textContent = time + " [" + type + "] " + data;
+		log.prepend(li);
+		while (log.children.length > max) {
+			log.removeChild(log.lastChild);
+		}
+	}
+})();
+</script>`)}
+		</>
 	)
 }

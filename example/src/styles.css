@@ -137,3 +137,32 @@ button:hover {
 	text-align: center;
 	padding: 4rem 0;
 }
+
+.qr-container {
+	margin-top: 1.5rem;
+	display: inline-block;
+}
+
+.event-status {
+	color: #666;
+	font-size: 0.875rem;
+	margin: 1rem 0;
+}
+
+.event-log {
+	list-style: none;
+	font-family: ui-monospace, monospace;
+	font-size: 0.8125rem;
+	line-height: 1.8;
+	max-height: 24rem;
+	overflow-y: auto;
+	border: 1px solid #e5e5e5;
+	border-radius: 0.5rem;
+	padding: 1rem;
+}
+
+.event-log li {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

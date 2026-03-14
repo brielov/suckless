@@ -39,6 +39,13 @@ export const es: AppDict = {
 	contactSuccess: "¡Tu mensaje ha sido enviado con éxito!",
 	notFound: "Página no encontrada",
 	tooManyRequests: "Demasiadas solicitudes. Inténtalo de nuevo más tarde.",
+	wifiQr: "WiFi para invitados",
+	wifiQrDescription:
+		"Escanea este código QR para conectarte a la red de invitados.",
+	liveEvents: "Eventos en vivo",
+	liveEventsDescription:
+		"Eventos del servidor en tiempo real transmitidos por Server-Sent Events.",
+	liveEventsConnected: "Conectado — esperando eventos\u2026",
 	relativeTime: (ms: number): string => tiempoAtras(ms),
 	postedBy: (author: string): string => `Por ${author}`,
 }

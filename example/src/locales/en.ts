@@ -39,6 +39,12 @@ export const en = {
 	contactSuccess: "Your message has been sent successfully!",
 	notFound: "Page not found",
 	tooManyRequests: "Too many requests. Please try again later.",
+	wifiQr: "Guest WiFi",
+	wifiQrDescription: "Scan this QR code to connect to the guest network.",
+	liveEvents: "Live Events",
+	liveEventsDescription:
+		"Real-time server events streamed via Server-Sent Events.",
+	liveEventsConnected: "Connected — waiting for events\u2026",
 	relativeTime: (ms: number): string => timeAgo(ms),
 	postedBy: (author: string): string => `By ${author}`,
 } satisfies Dict

@@ -1,6 +1,7 @@
 import { resolve, translate } from "@suckless/i18n"
 import type { RawHtml } from "@suckless/jsx"
 import { stableKey } from "@suckless/key"
+import { createQrCode, encodeData, renderSvg } from "@suckless/qr-code"
 import { createRouter } from "@suckless/router"
 import { compile, object, refine, string } from "@suckless/schema"
 import { type Locale, findPost, posts } from "./data.ts"
@@ -12,8 +13,17 @@ import {
 	emitter,
 	pageCache,
 	requestIPs,
+	sseChannel,
 } from "./services.ts"
-import { ContactPage, ErrorPage, HomePage, Layout, PostPage } from "./views.tsx"
+import {
+	ContactPage,
+	ErrorPage,
+	EventsPage,
+	HomePage,
+	Layout,
+	PostPage,
+	QrPage,
+} from "./views.tsx"
 
 // ── Locale resolution ───────────────────────────────────────────────
 
@@ -169,6 +179,49 @@ function handleContactGet(
 	)
 }
 
+function handleQr(_req: Request, params: Record<string, string>): Response {
+	const { locale: localeParam } = params
+	if (localeParam === undefined) {
+		return new Response("Bad Request", { status: 400 })
+	}
+	const locale = resolveLocale(localeParam)
+	const t = translate(DICTS[locale])
+
+	const text = encodeData({
+		type: "wifi",
+		ssid: "Suckless-Guest",
+		password: "correcthorsebatterystaple",
+		encryption: "WPA",
+	})
+	const qr = createQrCode(text, { errorCorrection: "H" })
+	const svg = renderSvg(qr, { size: 300 })
+
+	return htmlResponse(
+		<Layout locale={locale} t={t}>
+			<QrPage t={t} svg={svg} />
+		</Layout>,
+	)
+}
+
+function handleEvents(_req: Request, params: Record<string, string>): Response {
+	const { locale: localeParam } = params
+	if (localeParam === undefined) {
+		return new Response("Bad Request", { status: 400 })
+	}
+	const locale = resolveLocale(localeParam)
+	const t = translate(DICTS[locale])
+
+	return htmlResponse(
+		<Layout locale={locale} t={t}>
+			<EventsPage locale={locale} t={t} />
+		</Layout>,
+	)
+}
+
+function handleEventsStream(req: Request): Response {
+	return sseChannel.connect(req)
+}
+
 // ── Router ──────────────────────────────────────────────────────────
 
 export const router = createRouter<RouteHandler>()
@@ -176,6 +229,9 @@ export const router = createRouter<RouteHandler>()
 	.add("/:locale", handleHome)
 	.add("/:locale/posts/:slug", handlePost)
 	.add("/:locale/contact", handleContactGet)
+	.add("/:locale/qr", handleQr)
+	.add("/:locale/events", handleEvents)
+	.add("/:locale/events/stream", handleEventsStream)
 
 // ── Contact POST handler ────────────────────────────────────────────
 
