@@ -20,15 +20,18 @@ Each package in this repository is:
 | [@suckless/cron](packages/cron)             | Cron expression parser with next/prev schedule computation       |
 | [@suckless/duration](packages/duration)     | Parse and format duration strings                                |
 | [@suckless/emitter](packages/emitter)       | Type-safe event emitter                                          |
+| [@suckless/i18n](packages/i18n)             | Type-safe internationalization with BCP 47 locale resolution     |
 | [@suckless/jsx](packages/jsx)               | JSX-to-string runtime with XSS escaping and strict element types |
 | [@suckless/key](packages/key)               | Deterministic value serialization                                |
 | [@suckless/limiter](packages/limiter)       | Token bucket rate limiter with pluggable storage                 |
 | [@suckless/memo](packages/memo)             | Memoization with LRU eviction                                    |
 | [@suckless/middleware](packages/middleware) | Generic composable middleware                                    |
+| [@suckless/qr-code](packages/qr-code)       | QR code generator with SVG rendering                             |
 | [@suckless/queue](packages/queue)           | Producer/consumer queue with pluggable storage                   |
 | [@suckless/retry](packages/retry)           | Retry with exponential backoff and jitter                        |
 | [@suckless/router](packages/router)         | Fast URL pattern router                                          |
 | [@suckless/schema](packages/schema)         | Runtime validation with compiled validators                      |
+| [@suckless/sse](packages/sse)               | Server-Sent Events channel for Web API servers                   |
 
 ## License
 
