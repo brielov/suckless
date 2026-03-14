@@ -66,4 +66,8 @@ export default defineWorkspace([
 		name: "qr-code",
 		root: "packages/qr-code",
 	},
+	{
+		name: "sse",
+		root: "packages/sse",
+	},
 ])

@@ -1,0 +1,47 @@
+{
+	"name": "@suckless/sse",
+	"version": "0.5.0",
+	"description": "Server-Sent Events channel for Web API servers",
+	"keywords": [
+		"eventsource",
+		"realtime",
+		"server-sent-events",
+		"sse",
+		"streaming",
+		"suckless",
+		"typescript"
+	],
+	"homepage": "https://github.com/brielov/suckless/tree/master/packages/sse#readme",
+	"bugs": "https://github.com/brielov/suckless/issues",
+	"license": "MIT",
+	"author": "brielov",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/brielov/suckless.git",
+		"directory": "packages/sse"
+	},
+	"files": [
+		"dist"
+	],
+	"type": "module",
+	"sideEffects": false,
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": {
+				"types": "./dist/index.d.ts",
+				"default": "./dist/index.js"
+			}
+		},
+		"./package.json": "./package.json"
+	},
+	"peerDependencies": {
+		"typescript": ">=5.2.0"
+	},
+	"peerDependenciesMeta": {
+		"typescript": {
+			"optional": true
+		}
+	}
+}
