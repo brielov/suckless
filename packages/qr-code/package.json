@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/qr-code",
-	"version": "0.5.1",
+	"version": "0.6.0",
 	"description": "Minimal, zero-dependency QR code generator with SVG and terminal rendering",
 	"keywords": [
 		"qr",

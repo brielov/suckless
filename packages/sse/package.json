@@ -1,6 +1,6 @@
 {
 	"name": "@suckless/sse",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "Server-Sent Events channel for Web API servers",
 	"keywords": [
 		"eventsource",
