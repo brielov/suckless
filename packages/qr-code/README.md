@@ -95,7 +95,7 @@ Options:
 - `dotStyle` — `"square"` (default) | `"rounded"` | `"dots"`
 - `cornerSquareStyle` — `"square"` (default) | `"rounded"` | `"dot"`
 - `cornerDotStyle` — `"square"` (default) | `"dot"`
-- `logo` — `{ src: string; sizeRatio?: number }` to embed an image in the center
+- `logo` — `{ src: string; sizeRatio?: number }` to embed an image in the center (default `sizeRatio` is `0.12`; prefer `errorCorrection: "H"` for denser payloads)
 
 ### `renderText(qr: QrCode, options?: TextOptions): string`
 

@@ -61,6 +61,17 @@ describe("encodeData", () => {
 		expect(result).not.toContain("P:")
 	})
 
+	it("omits password field for nopass even when provided", () => {
+		const result = encodeData({
+			type: "wifi",
+			ssid: "Open",
+			password: "ignored",
+			encryption: "nopass",
+		})
+		expect(result).toBe("WIFI:T:nopass;S:Open;;")
+		expect(result).not.toContain("P:")
+	})
+
 	it("includes hidden flag when true", () => {
 		const result = encodeData({
 			type: "wifi",
@@ -116,6 +127,15 @@ describe("encodeData", () => {
 		expect(result).toContain(String.raw`ADR:Line1\nLine2`)
 	})
 
+	it("normalizes CRLF line endings inside vCard fields", () => {
+		const result = encodeData({
+			type: "contact",
+			address: "Line1\r\nLine2\rLine3",
+		})
+		expect(result).toContain(String.raw`ADR:Line1\nLine2\nLine3`)
+		expect(result).not.toContain("\r\\n")
+	})
+
 	it("includes only populated vCard fields", () => {
 		const result = encodeData({
 			type: "contact",
@@ -125,6 +145,18 @@ describe("encodeData", () => {
 		expect(result).not.toContain("ORG:")
 		expect(result).not.toContain("TEL:")
 		expect(result).not.toContain("EMAIL:")
+	})
+
+	it("throws for invalid runtime payloads from JS consumers", () => {
+		expect(() => {
+			Reflect.apply(encodeData, undefined, [
+				{
+					type: "wifi",
+					ssid: "Test",
+					encryption: "bad",
+				},
+			])
+		}).toThrow(TypeError)
 	})
 })
 
@@ -168,6 +200,12 @@ describe("createQrCode", () => {
 		expect(() => {
 			createQrCode("A".repeat(10_000))
 		}).toThrow(RangeError)
+	})
+
+	it("throws TypeError for invalid error correction at runtime", () => {
+		expect(() => {
+			Reflect.apply(createQrCode, undefined, ["test", { errorCorrection: "X" }])
+		}).toThrow(TypeError)
 	})
 
 	it("has dark module at position (size-8, 8)", () => {
@@ -363,6 +401,15 @@ describe("renderSvg", () => {
 		).toThrow(RangeError)
 	})
 
+	it("throws on blank logo src", () => {
+		const qr = makeQr()
+		expect(() =>
+			renderSvg(qr, {
+				logo: { src: "   " },
+			}),
+		).toThrow(RangeError)
+	})
+
 	it("throws when logo is too large for EC capacity", () => {
 		const qr = createQrCode("test", { errorCorrection: "L" })
 		expect(() =>
@@ -383,6 +430,22 @@ describe("renderSvg", () => {
 			},
 		})
 		expect(svg).toContain("<image")
+	})
+
+	it("treats equivalent colors as matching for logo safety checks", () => {
+		const qr = createQrCode("https://example.com", {
+			errorCorrection: "H",
+		})
+		expect(() =>
+			renderSvg(qr, {
+				background: "#ffffff",
+				logo: {
+					src: "data:image/png;base64,abc",
+					backgroundColor: "#fff",
+					sizeRatio: 0.18,
+				},
+			}),
+		).not.toThrow()
 	})
 
 	it("counts all modules when logo bg differs from QR bg", () => {
@@ -444,6 +507,28 @@ describe("renderSvg", () => {
 		})
 		expect(svg).toContain('rx="8.123"')
 		expect(svg).toContain('ry="8.123"')
+	})
+
+	it("keeps styled transparent corners transparent", () => {
+		const svg = renderSvg(makeQr(), {
+			background: "transparent",
+			cornerSquareStyle: "rounded",
+			cornerDotStyle: "dot",
+		})
+		expect(svg).toContain("stroke=")
+		expect(svg).not.toContain('fill="#ffffff"')
+	})
+
+	it("rejects invalid qr module values at runtime", () => {
+		const qr = createQrCode("https://example.com")
+		const modules = new Uint8Array(qr.modules)
+		modules[0] = 2
+		expect(() =>
+			renderSvg({
+				...qr,
+				modules,
+			}),
+		).toThrow(RangeError)
 	})
 })
 
@@ -537,6 +622,10 @@ describe("renderText", () => {
 		const qr = makeQr()
 		expect(() => renderText(qr, { margin: NaN })).toThrow(RangeError)
 		expect(() => renderText(qr, { margin: -1 })).toThrow(RangeError)
+		expect(() => renderText(qr, { margin: 1.5 })).toThrow(RangeError)
+		expect(() => {
+			Reflect.apply(renderText, undefined, [qr, { invert: 1 }])
+		}).toThrow(TypeError)
 	})
 })
 

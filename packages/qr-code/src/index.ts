@@ -71,6 +71,205 @@ const DEFAULT_LOGO_SIZE_RATIO = 0.12
 const DEFAULT_LOGO_PADDING = 6
 const DEFAULT_LOGO_BORDER_RADIUS = 4
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null
+}
+
+function assertString(name: string, value: unknown): asserts value is string {
+	if (typeof value !== "string") {
+		throw new TypeError(`${name} must be a string`)
+	}
+}
+
+function assertNonEmptyString(
+	name: string,
+	value: unknown,
+): asserts value is string {
+	assertString(name, value)
+	if (value.trim() === "") {
+		throw new RangeError(`${name} must be a non-empty string`)
+	}
+}
+
+function assertOptionalString(
+	name: string,
+	value: unknown,
+): asserts value is string | undefined {
+	if (value !== undefined) {
+		assertString(name, value)
+	}
+}
+
+function assertOptionalBoolean(
+	name: string,
+	value: unknown,
+): asserts value is boolean | undefined {
+	if (value !== undefined && typeof value !== "boolean") {
+		throw new TypeError(`${name} must be a boolean`)
+	}
+}
+
+function assertInteger(name: string, value: number): void {
+	if (!Number.isInteger(value)) {
+		throw new RangeError(`${name} must be an integer`)
+	}
+}
+
+function isErrorCorrectionLevel(value: unknown): value is ErrorCorrectionLevel {
+	return value === "L" || value === "M" || value === "Q" || value === "H"
+}
+
+function assertErrorCorrectionLevel(
+	name: string,
+	value: unknown,
+): asserts value is ErrorCorrectionLevel {
+	if (!isErrorCorrectionLevel(value)) {
+		throw new TypeError(`${name} must be one of "L", "M", "Q", or "H"`)
+	}
+}
+
+function isWifiEncryption(value: unknown): value is WifiData["encryption"] {
+	return value === "WPA" || value === "WEP" || value === "nopass"
+}
+
+function assertWifiEncryption(
+	name: string,
+	value: unknown,
+): asserts value is WifiData["encryption"] {
+	if (!isWifiEncryption(value)) {
+		throw new TypeError(`${name} must be one of "WPA", "WEP", or "nopass"`)
+	}
+}
+
+function isDotStyle(value: unknown): value is DotStyle {
+	return value === "square" || value === "rounded" || value === "dots"
+}
+
+function assertDotStyle(
+	name: string,
+	value: unknown,
+): asserts value is DotStyle {
+	if (!isDotStyle(value)) {
+		throw new TypeError(`${name} must be one of "square", "rounded", or "dots"`)
+	}
+}
+
+function isCornerSquareStyle(value: unknown): value is CornerSquareStyle {
+	return value === "square" || value === "rounded" || value === "dot"
+}
+
+function assertCornerSquareStyle(
+	name: string,
+	value: unknown,
+): asserts value is CornerSquareStyle {
+	if (!isCornerSquareStyle(value)) {
+		throw new TypeError(`${name} must be one of "square", "rounded", or "dot"`)
+	}
+}
+
+function isCornerDotStyle(value: unknown): value is CornerDotStyle {
+	return value === "square" || value === "dot"
+}
+
+function assertCornerDotStyle(
+	name: string,
+	value: unknown,
+): asserts value is CornerDotStyle {
+	if (!isCornerDotStyle(value)) {
+		throw new TypeError(`${name} must be one of "square" or "dot"`)
+	}
+}
+
+function assertQrCode(qr: QrCode): void {
+	if (!isObjectRecord(qr)) {
+		throw new TypeError("qr must be an object")
+	}
+
+	const { version, size, modules, errorCorrection } = qr as {
+		version?: unknown
+		size?: unknown
+		modules?: unknown
+		errorCorrection?: unknown
+	}
+
+	if (typeof version !== "number" || !Number.isFinite(version)) {
+		throw new TypeError("qr.version must be a finite number")
+	}
+	assertInteger("qr.version", version)
+	if (version < 1 || version > 40) {
+		throw new RangeError("qr.version must be between 1 and 40")
+	}
+
+	if (typeof size !== "number" || !Number.isFinite(size)) {
+		throw new TypeError("qr.size must be a finite number")
+	}
+	assertInteger("qr.size", size)
+	const expectedSize = version * 4 + 17
+	if (size !== expectedSize) {
+		throw new RangeError(
+			`qr.size must be ${expectedSize} for version ${version}`,
+		)
+	}
+
+	if (!(modules instanceof Uint8Array)) {
+		throw new TypeError("qr.modules must be a Uint8Array")
+	}
+	if (modules.length !== size * size) {
+		throw new RangeError(`qr.modules length must be ${size * size}`)
+	}
+
+	assertErrorCorrectionLevel("qr.errorCorrection", errorCorrection)
+}
+
+function normalizeLineBreaks(s: string): string {
+	return s.replaceAll(/\r\n?/g, "\n")
+}
+
+function normalizeColorForComparison(color: string): string {
+	const value = color.trim().toLowerCase()
+	if (value === "transparent" || value === "none") {
+		return "transparent"
+	}
+	if (value === "white") {
+		return "#ffffff"
+	}
+	if (value === "black") {
+		return "#000000"
+	}
+
+	const shortHex = value.match(/^#([0-9a-f]{3}|[0-9a-f]{4})$/)
+	if (shortHex) {
+		const expandedParts = ["#"]
+		for (const ch of shortHex[1]!) {
+			expandedParts.push(ch, ch)
+		}
+		const expanded = expandedParts.join("")
+		return expanded.endsWith("ff") && expanded.length === 9
+			? expanded.slice(0, 7)
+			: expanded
+	}
+
+	const opaqueHex = value.match(/^#([0-9a-f]{6})ff$/)
+	if (opaqueHex) {
+		return `#${opaqueHex[1]!}`
+	}
+
+	return value
+}
+
+function readModule(
+	modules: Uint8Array,
+	size: number,
+	row: number,
+	col: number,
+): 0 | 1 {
+	const value = modules[row * size + col]
+	if (value !== 0 && value !== 1) {
+		throw new RangeError("qr.modules must contain only 0 or 1 values")
+	}
+	return value
+}
+
 // ── Internal Constants ────────────────────────────────
 
 const NUMERIC = 1
@@ -838,7 +1037,10 @@ const textEncoder = new TextEncoder()
 
 /** Encode a string into a QR code matrix. */
 export function createQrCode(text: string, options?: QrOptions): QrCode {
+	assertString("text", text)
+
 	const ecLevel = options?.errorCorrection ?? "M"
+	assertErrorCorrectionLevel("errorCorrection", ecLevel)
 	const ecIdx = EC_IDX[ecLevel]
 
 	const bytes = textEncoder.encode(text)
@@ -908,7 +1110,7 @@ function escapeWifi(s: string): string {
 }
 
 function escapeVcard(s: string): string {
-	return s
+	return normalizeLineBreaks(s)
 		.replaceAll("\\", String.raw`\\`)
 		.replaceAll(";", String.raw`\;`)
 		.replaceAll(",", String.raw`\,`)
@@ -917,15 +1119,25 @@ function escapeVcard(s: string): string {
 
 /** Encode structured data into a QR-compatible string. */
 export function encodeData(data: QrData): string {
+	if (!isObjectRecord(data)) {
+		throw new TypeError("data must be an object")
+	}
+
 	switch (data.type) {
 		case "url": {
+			assertString("data.value", data.value)
 			return data.value
 		}
 		case "wifi": {
+			assertString("data.ssid", data.ssid)
+			assertWifiEncryption("data.encryption", data.encryption)
+			assertOptionalString("data.password", data.password)
+			assertOptionalBoolean("data.hidden", data.hidden)
+
 			let s = "WIFI:"
 			s += `T:${data.encryption};`
 			s += `S:${escapeWifi(data.ssid)};`
-			if (data.password !== undefined) {
+			if (data.encryption !== "nopass" && data.password !== undefined) {
 				s += `P:${escapeWifi(data.password)};`
 			}
 			if (data.hidden === true) {
@@ -934,6 +1146,14 @@ export function encodeData(data: QrData): string {
 			return `${s};`
 		}
 		case "contact": {
+			assertOptionalString("data.firstName", data.firstName)
+			assertOptionalString("data.lastName", data.lastName)
+			assertOptionalString("data.organization", data.organization)
+			assertOptionalString("data.phone", data.phone)
+			assertOptionalString("data.email", data.email)
+			assertOptionalString("data.url", data.url)
+			assertOptionalString("data.address", data.address)
+
 			const lines = ["BEGIN:VCARD", "VERSION:3.0"]
 			const fn = [data.firstName, data.lastName].filter(Boolean).join(" ")
 			if (fn !== "") {
@@ -959,6 +1179,11 @@ export function encodeData(data: QrData): string {
 			}
 			lines.push("END:VCARD")
 			return lines.join("\r\n")
+		}
+		default: {
+			throw new TypeError(
+				`Unsupported data.type: ${String((data as { type?: unknown }).type)}`,
+			)
 		}
 	}
 }
@@ -1165,6 +1390,8 @@ function assertNonNegative(name: string, value: number): void {
 
 /** Render a QR code matrix as an SVG string. */
 export function renderSvg(qr: QrCode, options?: SvgOptions): string {
+	assertQrCode(qr)
+
 	const size = options?.size ?? 400
 	const margin = options?.margin ?? 4
 	assertPositive("size", size)
@@ -1174,6 +1401,11 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 	const ds = options?.dotStyle ?? "square"
 	const css = options?.cornerSquareStyle ?? "square"
 	const cds = options?.cornerDotStyle ?? "square"
+	assertString("foreground", fg)
+	assertString("background", bg)
+	assertDotStyle("dotStyle", ds)
+	assertCornerSquareStyle("cornerSquareStyle", css)
+	assertCornerDotStyle("cornerDotStyle", cds)
 
 	const total = qr.size + margin * 2
 	const cell = size / total
@@ -1186,6 +1418,9 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 	let exclX2 = -1
 	let exclY2 = -1
 	if (logo) {
+		assertNonEmptyString("logo.src", logo.src)
+		assertOptionalString("logo.backgroundColor", logo.backgroundColor)
+
 		const ratio = logo.sizeRatio ?? DEFAULT_LOGO_SIZE_RATIO
 		const logoPadding = logo.padding ?? DEFAULT_LOGO_PADDING
 		const borderRadius = logo.borderRadius ?? DEFAULT_LOGO_BORDER_RADIUS
@@ -1212,14 +1447,16 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 		// When the logo background matches the QR background, only
 		// dark modules are corrupted (light modules remain correct).
 		// When they differ, ALL modules in the zone are corrupted.
-		const logoBg = (logo.backgroundColor ?? "#ffffff").toLowerCase()
-		const qrBg = bg.toLowerCase()
+		const logoBg = normalizeColorForComparison(
+			logo.backgroundColor ?? "#ffffff",
+		)
+		const qrBg = normalizeColorForComparison(bg)
 		const bgMatch = logoBg === qrBg
 		let corrupted = 0
 		for (let y = exclY1; y <= exclY2; y++) {
 			for (let x = exclX1; x <= exclX2; x++) {
 				if (bgMatch) {
-					if (qr.modules[y * qr.size + x] !== 0) {
+					if (readModule(qr.modules, qr.size, y, x) !== 0) {
 						corrupted++
 					}
 				} else {
@@ -1253,7 +1490,7 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 
 	for (let y = 0; y < qr.size; y++) {
 		for (let x = 0; x < qr.size; x++) {
-			if (qr.modules[y * qr.size + x] === 0) {
+			if (readModule(qr.modules, qr.size, y, x) === 0) {
 				continue
 			}
 			if (styledCorners && isFinderRegion(x, y, qr.size)) {
@@ -1276,11 +1513,13 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
 		for (const [fx, fy] of origins) {
 			const cx = off + fx * cell
 			const cy = off + fy * cell
-			svg +=
-				`<rect x="${fmt(cx)}" y="${fmt(cy)}"` +
-				` width="${fmt(7 * cell)}"` +
-				` height="${fmt(7 * cell)}"` +
-				` fill="${eBg}"/>`
+			if (bg !== "transparent") {
+				svg +=
+					`<rect x="${fmt(cx)}" y="${fmt(cy)}"` +
+					` width="${fmt(7 * cell)}"` +
+					` height="${fmt(7 * cell)}"` +
+					` fill="${eBg}"/>`
+			}
 			svg += renderCornerSquare(css, cx, cy, cell, fg)
 			svg += renderCornerDot(cds, cx, cy, cell, fg)
 		}
@@ -1305,9 +1544,15 @@ export function renderSvg(qr: QrCode, options?: SvgOptions): string {
  * dark modules render as spaces (background color).
  */
 export function renderText(qr: QrCode, options?: TextOptions): string {
+	assertQrCode(qr)
+
 	const margin = options?.margin ?? 4
 	const invert = options?.invert ?? false
 	assertNonNegative("margin", margin)
+	assertInteger("margin", margin)
+	if (typeof invert !== "boolean") {
+		throw new TypeError("invert must be a boolean")
+	}
 
 	const total = qr.size + margin * 2
 	const lines: string[] = []
@@ -1322,7 +1567,7 @@ export function renderText(qr: QrCode, options?: TextOptions): string {
 				mr < qr.size &&
 				mc >= 0 &&
 				mc < qr.size &&
-				qr.modules[mr * qr.size + mc] === 1
+				readModule(qr.modules, qr.size, mr, mc) === 1
 			const br = mr + 1
 			const bottom =
 				row + 1 < total &&
@@ -1330,7 +1575,7 @@ export function renderText(qr: QrCode, options?: TextOptions): string {
 				br < qr.size &&
 				mc >= 0 &&
 				mc < qr.size &&
-				qr.modules[br * qr.size + mc] === 1
+				readModule(qr.modules, qr.size, br, mc) === 1
 			const t = invert ? !top : top
 			const b = invert ? !bottom : bottom
 			if (t && b) {
