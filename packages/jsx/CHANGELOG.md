@@ -1,5 +1,11 @@
 # @suckless/jsx
 
+## 0.7.0
+
+### Minor Changes
+
+- b192bc7: Add a synchronous server-only React-shaped rendering surface for pure render libraries, including lazy render handles, `createElement`, `forwardRef`, `memo`, context helpers, React-style DOM/SVG prop normalization, and lucide-react compatibility. Async component rendering is explicitly unsupported.
+
 ## 0.6.0
 
 ## 0.5.1
