@@ -1,4 +1,4 @@
-import { raw, type Children, type RawHtml } from "@suckless/jsx"
+import { raw, type RawHtml, type Renderable } from "@suckless/jsx"
 import type { TranslateFn } from "@suckless/i18n"
 import type { AppDict } from "./locales/en.ts"
 import type { Locale, Post } from "./data.ts"
@@ -9,7 +9,7 @@ import CSS from "./styles.css" with { type: "text" }
 export function Layout(props: {
 	locale: Locale
 	t: TranslateFn<AppDict>
-	children?: Children
+	children?: Renderable
 }): RawHtml {
 	const { locale, t, children } = props
 	const otherLocale: Locale = locale === "en" ? "es" : "en"

@@ -24,6 +24,7 @@
 		"bunup": "^0.16.31",
 		"fast-check": "^4.5.3",
 		"jsqr": "^1.4.0",
+		"lucide-react": "^1.16.0",
 		"oxfmt": "^0.36.0",
 		"oxlint": "^1.51.0",
 		"oxlint-tsgolint": "^0.15.0",

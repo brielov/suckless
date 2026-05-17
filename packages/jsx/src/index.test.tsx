@@ -1,6 +1,21 @@
 /** @jsxImportSource @suckless/jsx */
-import { describe, expect, test } from "bun:test"
-import { escape, raw, type Component } from "@suckless/jsx"
+/* oxlint-disable unicorn/no-null -- The runtime intentionally accepts React-style null children and props. */
+import { describe, expect, mock, test } from "bun:test"
+import * as SucklessJsx from "@suckless/jsx"
+import {
+	Children,
+	cloneElement,
+	createContext,
+	createElement,
+	escape,
+	forwardRef,
+	isValidElement,
+	memo,
+	raw,
+	useContext,
+	type Component,
+	type ElementType,
+} from "@suckless/jsx"
 import {
 	Fragment as devFragment,
 	jsx as devJsx,
@@ -275,6 +290,162 @@ describe("function components", () => {
 	test("nested components", () => {
 		const html = <Outer>text</Outer>
 		expect(html.value).toBe("<div><em>text</em></div>")
+	})
+})
+
+// ── Lazy render handles ────────────────────────────────────────────
+
+describe("lazy render handles", () => {
+	test("toString and value render the same HTML", () => {
+		const html = <div title="x">ok</div>
+		expect(String(html)).toBe('<div title="x">ok</div>')
+		expect(html.value).toBe('<div title="x">ok</div>')
+	})
+
+	test("component execution is deferred until serialization", () => {
+		let calls = 0
+		const Deferred: Component = () => {
+			calls += 1
+			return <span>ok</span>
+		}
+		const html = <Deferred />
+		expect(calls).toBe(0)
+		expect(html.value).toBe("<span>ok</span>")
+		expect(calls).toBe(1)
+		expect(html.value).toBe("<span>ok</span>")
+		expect(calls).toBe(1)
+	})
+})
+
+// ── React-shaped helpers ───────────────────────────────────────────
+
+describe("React-shaped helpers", () => {
+	test("createElement renders intrinsic elements", () => {
+		const html = createElement("div", { className: "box" }, "ok")
+		expect(html.value).toBe('<div class="box">ok</div>')
+	})
+
+	test("normalizes React-style HTML, SVG, and style props", () => {
+		const html = (
+			<label htmlFor="email" style={{ backgroundColor: "red", zIndex: 1 }}>
+				<svg viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" />
+			</label>
+		)
+		expect(html.value).toBe(
+			'<label for="email" style="background-color:red;z-index:1;"><svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"></svg></label>',
+		)
+	})
+
+	test("cloneElement merges props and children", () => {
+		const html = cloneElement(
+			<button class="a">old</button>,
+			{ className: "b" },
+			"new",
+		)
+		expect(html.value).toBe('<button class="b">new</button>')
+	})
+
+	test("isValidElement detects render handles", () => {
+		expect(isValidElement(<div />)).toBe(true)
+		expect(isValidElement("x")).toBe(false)
+	})
+
+	test("Children.toArray flattens renderable children", () => {
+		expect(
+			Children.toArray(["a", [false, <span>b</span>], undefined]).length,
+		).toBe(2)
+	})
+
+	test("forwardRef renders and ignores ref attributes", () => {
+		const Icon = forwardRef<SVGSVGElement, { label: string }>((props) => (
+			<svg aria-label={props.label} />
+		))
+		const html = <Icon label="Search" ref={{ current: null }} />
+		expect(html.value).toBe('<svg aria-label="Search"></svg>')
+	})
+
+	test("memo renders wrapped components", () => {
+		const Badge = memo<{ label: string }>((props) => <span>{props.label}</span>)
+		expect((<Badge label="New" />).value).toBe("<span>New</span>")
+	})
+
+	test("context provider and useContext render synchronously", () => {
+		const Theme = createContext("light")
+		const Label: Component = () => <span>{useContext(Theme)}</span>
+		const html = (
+			<Theme.Provider value="dark">
+				<Label />
+			</Theme.Provider>
+		)
+		expect(html.value).toBe("<span>dark</span>")
+	})
+
+	test("promise-like renderables fail clearly", () => {
+		const props: Record<string, unknown> = {
+			children: Promise.resolve(<span />),
+		}
+		const html = createElement("div", props)
+		expect(() => html.value).toThrow("Async components are not supported")
+	})
+
+	test("renders Lucide-style icon components", () => {
+		const Camera = forwardRef<
+			SVGSVGElement,
+			{
+				className?: string
+				color?: string
+				size?: number
+				strokeWidth?: number
+			}
+		>((props) =>
+			createElement(
+				"svg",
+				{
+					className: props.className,
+					fill: "none",
+					height: props.size ?? 24,
+					stroke: props.color ?? "currentColor",
+					strokeLinecap: "round",
+					strokeLinejoin: "round",
+					strokeWidth: props.strokeWidth ?? 2,
+					viewBox: "0 0 24 24",
+					width: props.size ?? 24,
+				},
+				createElement("path", { d: "M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9" }),
+				createElement("circle", { cx: 12, cy: 13, r: 3 }),
+			),
+		)
+		const html = <Camera className="size-4" />
+		expect(html.value).toBe(
+			'<svg class="size-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9"></path><circle cx="12" cy="13" r="3"></circle></svg>',
+		)
+	})
+
+	test("renders lucide-react through the React-shaped runtime", async () => {
+		void mock.module("react", () => SucklessJsx)
+		/* oxlint-disable typescript-eslint/no-unsafe-type-assertion -- The runtime alias is the behavior under test. */
+		const { Camera, LucideProvider } =
+			(await import("lucide-react")) as unknown as {
+				Camera: ElementType
+				LucideProvider: ElementType
+			}
+		/* oxlint-enable typescript-eslint/no-unsafe-type-assertion */
+
+		const icon = createElement(Camera, { className: "size-4" })
+		expect(icon.value).toContain("<svg")
+		expect(icon.value).toContain('stroke="currentColor"')
+		expect(icon.value).toContain('stroke-width="2"')
+		expect(icon.value).toContain('class="lucide lucide-camera size-4"')
+		expect(icon.value).toContain("<circle")
+
+		const themed = createElement(
+			LucideProvider,
+			{ color: "red", size: 16 },
+			createElement(Camera, undefined),
+		)
+		expect(themed.value).toContain('width="16"')
+		expect(themed.value).toContain('height="16"')
+		expect(themed.value).toContain('stroke="red"')
 	})
 })
 

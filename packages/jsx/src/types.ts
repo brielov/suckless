@@ -1,26 +1,74 @@
 // ── Foundation ──────────────────────────────────────────────────────
 
 /** Content that can appear as children of an HTML/SVG element. */
-export type Children =
+export type Renderable =
 	| string
 	| number
 	| boolean
 	| null
 	| undefined
 	| RawHtml
-	| Children[]
+	| Renderable[]
 
-/** A pre-escaped HTML string that bypasses automatic escaping. */
+/** A render handle that serializes to HTML when read. */
 export interface RawHtml {
-	readonly __raw: true
 	readonly value: string
 	toString(): string
 }
 
 /** A function component that receives typed props and returns HTML. */
 export type Component<P = Record<never, never>> = (
-	props: P & { children?: Children },
+	props: P & { children?: Renderable },
 ) => RawHtml
+
+export type RenderFunction<P = Record<never, never>> = (
+	props: P & { children?: Renderable },
+) => Renderable
+
+export type ElementType<P = Record<string, unknown>> =
+	| string
+	| RenderFunction<P>
+	| ForwardRefExoticComponent<P>
+	| NamedExoticComponent<P>
+
+export type RefCallback<T> = (instance: T | null) => void
+export interface RefObject<T> {
+	current: T | null
+}
+export type Ref<T> = RefCallback<T> | RefObject<T> | null
+
+export interface RefAttributes<T> {
+	ref?: Ref<T>
+}
+
+export type CSSProperties = Record<string, string | number | null | undefined>
+
+export type ForwardRefRenderFunction<T, P = Record<never, never>> = (
+	props: P,
+	ref: Ref<T> | undefined,
+) => Renderable
+
+export interface ForwardRefExoticComponent<P = Record<never, never>> {
+	(props: P): RawHtml
+	displayName?: string
+}
+
+export interface NamedExoticComponent<P = Record<never, never>> {
+	(props: P): RawHtml
+	displayName?: string
+}
+
+export type MemoExoticComponent<
+	T extends RenderFunction<Record<string, unknown>>,
+> = T
+
+export interface Context<T> {
+	Provider: Component<{ value: T }>
+	Consumer: Component<{ children?: ((value: T) => Renderable) | Renderable }>
+}
+
+export type ReactNode = Renderable
+export type ReactElement = RawHtml
 
 // ── Shared type aliases ────────────────────────────────────────────
 
@@ -96,7 +144,9 @@ export interface GlobalAttributes {
 	autocapitalize?: "off" | "none" | "on" | "sentences" | "words" | "characters"
 	autofocus?: boolean
 	class?: string
+	className?: string
 	contenteditable?: boolean | "plaintext-only" | ""
+	dangerouslySetInnerHTML?: { __html: string }
 	dir?: "ltr" | "rtl" | "auto"
 	draggable?: boolean
 	enterkeyhint?:
@@ -108,6 +158,7 @@ export interface GlobalAttributes {
 		| "search"
 		| "send"
 	hidden?: boolean | "until-found"
+	htmlFor?: string
 	id?: string
 	inert?: boolean
 	inputmode?:
@@ -125,14 +176,16 @@ export interface GlobalAttributes {
 	itemref?: string
 	itemscope?: boolean
 	itemtype?: string
+	key?: string | number
 	lang?: string
 	nonce?: string
 	part?: string
 	popover?: "auto" | "manual" | ""
+	ref?: Ref<unknown>
 	role?: string
 	slot?: string
 	spellcheck?: boolean | ""
-	style?: string
+	style?: string | CSSProperties
 	tabindex?: number | string
 	title?: string
 	translate?: "yes" | "no" | ""
@@ -144,7 +197,7 @@ export interface GlobalAttributes {
 
 /** Attributes for non-void HTML elements. */
 export interface HtmlAttributes extends GlobalAttributes {
-	children?: Children
+	children?: Renderable
 }
 
 /** Attributes for void HTML elements (no closing tag). */
@@ -553,29 +606,47 @@ export interface VideoAttributes extends HtmlAttributes {
 
 export interface SVGGlobalAttributes {
 	class?: string
+	className?: string
 	"clip-path"?: string
+	clipPath?: string
 	"clip-rule"?: "nonzero" | "evenodd" | "inherit"
+	clipRule?: "nonzero" | "evenodd" | "inherit"
 	color?: string
 	cursor?: string
+	dangerouslySetInnerHTML?: { __html: string }
 	direction?: "ltr" | "rtl" | "inherit"
 	display?: string
 	fill?: string
 	"fill-opacity"?: number | string
+	fillOpacity?: number | string
 	"fill-rule"?: "nonzero" | "evenodd" | "inherit"
+	fillRule?: "nonzero" | "evenodd" | "inherit"
 	filter?: string
 	"flood-color"?: string
+	floodColor?: string
 	"flood-opacity"?: number | string
+	floodOpacity?: number | string
 	"font-family"?: string
+	fontFamily?: string
 	"font-size"?: number | string
+	fontSize?: number | string
 	"font-style"?: string
+	fontStyle?: string
 	"font-weight"?: number | string
+	fontWeight?: number | string
 	id?: string
+	key?: string | number
 	"letter-spacing"?: number | string
+	letterSpacing?: number | string
 	"lighting-color"?: string
+	lightingColor?: string
 	marker?: string
 	"marker-end"?: string
+	markerEnd?: string
 	"marker-mid"?: string
+	markerMid?: string
 	"marker-start"?: string
+	markerStart?: string
 	mask?: string
 	opacity?: number | string
 	overflow?: "visible" | "hidden" | "scroll" | "auto" | "inherit"
@@ -592,26 +663,51 @@ export interface SVGGlobalAttributes {
 		| "stroke"
 		| "all"
 		| "inherit"
+	ref?: Ref<unknown>
 	"shape-rendering"?:
 		| "auto"
 		| "optimizeSpeed"
 		| "crispEdges"
 		| "geometricPrecision"
 		| "inherit"
+	shapeRendering?:
+		| "auto"
+		| "optimizeSpeed"
+		| "crispEdges"
+		| "geometricPrecision"
+		| "inherit"
 	"stop-color"?: string
+	stopColor?: string
 	"stop-opacity"?: number | string
+	stopOpacity?: number | string
 	stroke?: string
 	"stroke-dasharray"?: string
+	strokeDasharray?: string
 	"stroke-dashoffset"?: number | string
+	strokeDashoffset?: number | string
 	"stroke-linecap"?: "butt" | "round" | "square" | "inherit"
+	strokeLinecap?: "butt" | "round" | "square" | "inherit"
 	"stroke-linejoin"?: "miter" | "round" | "bevel" | "inherit"
+	strokeLinejoin?: "miter" | "round" | "bevel" | "inherit"
 	"stroke-miterlimit"?: number | string
+	strokeMiterlimit?: number | string
+	strokeMiterLimit?: number | string
 	"stroke-opacity"?: number | string
+	strokeOpacity?: number | string
 	"stroke-width"?: number | string
-	style?: string
+	strokeWidth?: number | string
+	style?: string | CSSProperties
 	"text-anchor"?: "start" | "middle" | "end" | "inherit"
+	textAnchor?: "start" | "middle" | "end" | "inherit"
 	"text-decoration"?: string
+	textDecoration?: string
 	"text-rendering"?:
+		| "auto"
+		| "optimizeSpeed"
+		| "optimizeLegibility"
+		| "geometricPrecision"
+		| "inherit"
+	textRendering?:
 		| "auto"
 		| "optimizeSpeed"
 		| "optimizeLegibility"
@@ -619,7 +715,16 @@ export interface SVGGlobalAttributes {
 		| "inherit"
 	transform?: string
 	"transform-origin"?: string
+	transformOrigin?: string
 	"unicode-bidi"?:
+		| "normal"
+		| "embed"
+		| "bidi-override"
+		| "isolate"
+		| "isolate-override"
+		| "plaintext"
+		| "inherit"
+	unicodeBidi?:
 		| "normal"
 		| "embed"
 		| "bidi-override"
@@ -629,14 +734,16 @@ export interface SVGGlobalAttributes {
 		| "inherit"
 	visibility?: "visible" | "hidden" | "collapse" | "inherit"
 	"word-spacing"?: number | string
+	wordSpacing?: number | string
 	"writing-mode"?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb"
+	writingMode?: "lr-tb" | "rl-tb" | "tb-rl" | "lr" | "rl" | "tb"
 }
 
 // ── SVG Base Attributes ────────────────────────────────────────────
 
 /** Attributes for non-void SVG elements. */
 export interface SVGAttributes extends SVGGlobalAttributes {
-	children?: Children
+	children?: Renderable
 }
 
 /** Attributes for void SVG elements (no children). */
@@ -656,6 +763,24 @@ export interface SVGSVGAttributes extends SVGAttributes {
 	x?: number | string
 	y?: number | string
 }
+
+export type SVGProps<T> = SVGSVGAttributes & RefAttributes<T>
+export type HTMLProps<T> = HtmlAttributes & RefAttributes<T>
+export type ComponentProps<T extends ElementType> =
+	T extends Component<infer P>
+		? P
+		: T extends ForwardRefExoticComponent<infer P>
+			? P
+			: T extends NamedExoticComponent<infer P>
+				? P
+				: T extends keyof IntrinsicElements
+					? IntrinsicElements[T]
+					: Record<string, unknown>
+export type ComponentPropsWithoutRef<T extends ElementType> = Omit<
+	ComponentProps<T>,
+	"ref"
+>
+export type ComponentPropsWithRef<T extends ElementType> = ComponentProps<T>
 
 export interface SVGCircleAttributes extends SVGAttributes {
 	cx?: number | string

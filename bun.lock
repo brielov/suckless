@@ -10,6 +10,7 @@
         "bunup": "^0.16.31",
         "fast-check": "^4.5.3",
         "jsqr": "^1.4.0",
+        "lucide-react": "^1.16.0",
         "oxfmt": "^0.36.0",
         "oxlint": "^1.51.0",
         "oxlint-tsgolint": "^0.15.0",
@@ -39,7 +40,7 @@
     },
     "packages/cache": {
       "name": "@suckless/cache",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -49,7 +50,7 @@
     },
     "packages/cron": {
       "name": "@suckless/cron",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -59,7 +60,7 @@
     },
     "packages/duration": {
       "name": "@suckless/duration",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -69,7 +70,7 @@
     },
     "packages/emitter": {
       "name": "@suckless/emitter",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -79,7 +80,7 @@
     },
     "packages/i18n": {
       "name": "@suckless/i18n",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -89,7 +90,7 @@
     },
     "packages/jsx": {
       "name": "@suckless/jsx",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -99,7 +100,7 @@
     },
     "packages/key": {
       "name": "@suckless/key",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -109,7 +110,7 @@
     },
     "packages/limiter": {
       "name": "@suckless/limiter",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -119,7 +120,7 @@
     },
     "packages/memo": {
       "name": "@suckless/memo",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "devDependencies": {
         "@suckless/key": "workspace:*",
       },
@@ -132,7 +133,7 @@
     },
     "packages/middleware": {
       "name": "@suckless/middleware",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -142,7 +143,7 @@
     },
     "packages/qr-code": {
       "name": "@suckless/qr-code",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "devDependencies": {
         "@types/qrcode": "^1.5.6",
         "jsqr": "^1.4.0",
@@ -157,7 +158,7 @@
     },
     "packages/queue": {
       "name": "@suckless/queue",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -167,7 +168,7 @@
     },
     "packages/retry": {
       "name": "@suckless/retry",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -177,7 +178,7 @@
     },
     "packages/router": {
       "name": "@suckless/router",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -187,7 +188,7 @@
     },
     "packages/schema": {
       "name": "@suckless/schema",
-      "version": "0.5.1",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=4.5.0",
       },
@@ -197,7 +198,7 @@
     },
     "packages/sse": {
       "name": "@suckless/sse",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "peerDependencies": {
         "typescript": ">=5.2.0",
       },
@@ -633,6 +634,8 @@
 
     "lodash.startcase": ["lodash.startcase@4.4.0", "", {}, "sha512-+WKqsK294HMSc2jEbNgpHpd0JfIBhp7rEV4aqXWqFr6AlXov+SlcgB1Fv01y2kGe3Gc8nMW7VA0SrGuSkRfIEg=="],
 
+    "lucide-react": ["lucide-react@1.16.0", "", { "peerDependencies": { "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-dYwyPzb4MEKpGUmNYk3WKWPnMrHs3FKM+q94kAnJrcDIqqn1hq2xY8scaS2ovsOCM5D51ey2gaRG3PBb1vgoYQ=="],
+
     "merge2": ["merge2@1.4.1", "", {}, "sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg=="],
 
     "micromatch": ["micromatch@4.0.8", "", { "dependencies": { "braces": "^3.0.3", "picomatch": "^2.3.1" } }, "sha512-PXwfBhYu0hBCPw8Dn0E+WDYb7af3dSLVWKi3HGv84IdF4TyFoC0ysxFd0Goxw7nSv4T/PzEJQxsYsEiFCKo2BA=="],
@@ -688,6 +691,8 @@
     "quansync": ["quansync@0.2.11", "", {}, "sha512-AifT7QEbW9Nri4tAwR5M/uzpBuqfZf+zwaEM/QkzEjj7NBuFD2rBuy0K3dE+8wltbezDV7JMA0WfnCPYRSYbXA=="],
 
     "queue-microtask": ["queue-microtask@1.2.3", "", {}, "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="],
+
+    "react": ["react@19.2.6", "", {}, "sha512-sfWGGfavi0xr8Pg0sVsyHMAOziVYKgPLNrS7ig+ivMNb3wbCBw3KxtflsGBAwD3gYQlE/AEZsTLgToRrSCjb0Q=="],
 
     "read-yaml-file": ["read-yaml-file@1.1.0", "", { "dependencies": { "graceful-fs": "^4.1.5", "js-yaml": "^3.6.1", "pify": "^4.0.1", "strip-bom": "^3.0.0" } }, "sha512-VIMnQi/Z4HT2Fxuwg5KrY174U1VdUIASQVWXXyqtNRtxSr9IYkn1rsI6Tb6HsrHCmB7gVpNwX6JxPTHcH6IoTA=="],
 

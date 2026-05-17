@@ -1,3 +1,5 @@
+/* oxlint-disable unicorn/number-literal-case -- oxfmt lowercases hexadecimal literals. */
+
 // ── Types ─────────────────────────────────────────────
 
 export type ErrorCorrectionLevel = "L" | "M" | "Q" | "H"
@@ -351,7 +353,7 @@ function initGf(): [Uint8Array, Uint8Array] {
 		log[x] = i
 		x <<= 1
 		if (x >= 256) {
-			x ^= 0x1_1D
+			x ^= 0x1_1d
 		}
 	}
 	for (let i = 255; i < 512; i++) {
@@ -986,7 +988,7 @@ function versionInfoBits(version: number): number {
 	let rem = version << 12
 	for (let i = 5; i >= 0; i--) {
 		if (rem & (1 << (i + 12))) {
-			rem ^= 0x1F_25 << i
+			rem ^= 0x1f_25 << i
 		}
 	}
 	return (version << 12) | rem
@@ -1059,10 +1061,10 @@ export function createQrCode(text: string, options?: QrOptions): QrCode {
 	while (buf.length % 8 !== 0) {
 		buf.put(0, 1)
 	}
-	let pad = 0xEC
+	let pad = 0xec
 	while (buf.length < cap) {
 		buf.put(pad, 8)
-		pad = pad === 0xEC ? 0x11 : 0xEC
+		pad = pad === 0xec ? 0x11 : 0xec
 	}
 
 	const dataBytes = buf.toBytes()

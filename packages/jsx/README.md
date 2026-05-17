@@ -1,6 +1,6 @@
 # @suckless/jsx
 
-JSX-to-string runtime for server-side HTML rendering. No virtual DOM, no framework, no hydration — JSX expressions evaluate directly to strings with automatic XSS escaping.
+JSX-to-HTML runtime for server-side rendering. No client runtime, no hydration, no effects — JSX expressions produce render handles that stringify to escaped HTML.
 
 ## Install
 
@@ -42,12 +42,12 @@ const page = (
 		</body>
 	</html>
 )
-// page is a plain string: "<html><head><title>Hello</title></head>..."
+// String(page): "<html><head><title>Hello</title></head>..."
 ```
 
 ### Components
 
-Function components receive props and return strings:
+Function components receive props and return renderable HTML:
 
 ```tsx
 /** @jsxImportSource @suckless/jsx */
@@ -66,6 +66,8 @@ const html = (
 	</Card>
 )
 ```
+
+Components are synchronous. Promise-returning components are rejected during rendering.
 
 ### Escaping
 
@@ -98,6 +100,32 @@ const items = (
 // → "<li>One</li><li>Two</li>"
 ```
 
+### React-shaped render libraries
+
+The root export includes a small server-only React-shaped surface for pure render libraries:
+
+- `createElement`
+- `forwardRef`
+- `memo`
+- `createContext` / `useContext`
+- `cloneElement`
+- `isValidElement`
+- `Children.toArray`
+
+Alias React imports to this package when a dependency imports `react`:
+
+```json
+{
+	"alias": {
+		"react": "@suckless/jsx",
+		"react/jsx-runtime": "@suckless/jsx/jsx-runtime",
+		"react/jsx-dev-runtime": "@suckless/jsx/jsx-dev-runtime"
+	}
+}
+```
+
+This supports pure server-rendered components such as icon libraries. It does not implement client state, effects, hydration, Suspense, or portals.
+
 ## API
 
 ### `escape(value: string): string`
@@ -108,9 +136,13 @@ Escapes `&`, `<`, `>`, `"`, and `'` to their HTML entity equivalents.
 
 Wraps a string to bypass automatic escaping. Use only with trusted content.
 
-### `Fragment(props: { children?: Children }): string`
+### `Fragment(props: { children?: Renderable }): RawHtml`
 
 Renders children without a wrapper element. Used automatically by `<>...</>` syntax.
+
+### `createElement(tag, props, ...children): RawHtml`
+
+Creates a render handle using the classic React-style call shape.
 
 ## Type Safety
 
@@ -119,6 +151,7 @@ Every HTML and SVG element has strict per-element attribute types:
 - Void elements (`<br>`, `<img>`, `<input>`, etc.) reject children at the type level
 - Element-specific attributes are enforced (`href` on `<a>`, not on `<div>`)
 - Standard HTML attributes (`class`, `for`) — not React conventions
+- Common React DOM/SVG aliases (`className`, `htmlFor`, `strokeWidth`, etc.) are normalized during rendering
 - No event handler types — this is a server-side renderer
 - `data-*` and `aria-*` attributes are supported on all elements
 
