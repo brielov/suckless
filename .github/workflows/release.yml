@@ -23,8 +23,6 @@ jobs:
         with:
           node-version: "22.x"
 
-      - run: npm install -g npm@latest
-
       - run: bun install --frozen-lockfile
 
       - run: bun run build
@@ -42,7 +40,7 @@ jobs:
         run: |
           for pkg in packages/*/; do
             if [ -f "$pkg/package.json" ]; then
-              output=$(npm publish "$pkg" --provenance --access public 2>&1) && echo "$output" || {
+              output=$(bunx npm@latest publish "$pkg" --provenance --access public 2>&1) && echo "$output" || {
                 if echo "$output" | grep -q "cannot publish over"; then
                   echo "Skipping $pkg (already published)"
                 else
